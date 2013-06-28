@@ -18,11 +18,22 @@ To use the correction terms inside a Python program,
     import hfhom.alink
 
     ...
+    >>> with open('YOUR_KNOT_FILE.lnk') as link:
+    >>>     corr_terms = hfhom.alink.ct_from_link(link) 
+    >>> print corr_terms
 
-    with open('YOUR_KNOT_FILE.lnk') as links:
-
-        corr_terms = hfhom.alink.ct_from_link(links) 
-
-    ...
-
+smith
+-----
+The Smith module computes the Smith Normal Form of a numpy matrix, as well as 
+the unimodular accompanying factors. The algorithm is an implementation of
+that of [Havas and Majewski](http://itee.uq.edu.au/~havas/1997hm.pdf). 
 Plans are made to extend the package to more classes of Manifolds at present.
+
+Usage:
+    >>> x = np.matrix([[-5, -2], [-2, -4]])
+    >>> d, (u, v) = smith_normal_form(x)
+    >>> assert u * d * v = x
+    >>> print d
+    [[1 0
+      0 16]]
+
