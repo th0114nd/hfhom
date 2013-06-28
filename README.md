@@ -16,9 +16,13 @@ To redirect the list into a file called `out.txt`, issue
     $ ./alink YOUR_LINK.lnk > out.txt
 To use the correction terms inside a Python program, 
     import hfhom.alink
+
     ...
+
     with open('YOUR_KNOT_FILE.lnk') as links:
+
         corr_terms = hfhom.alink.ct_from_link(links) 
+
     ...
 
 Plans are made to extend the package to more classes of Manifolds at present.
