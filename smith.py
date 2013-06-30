@@ -62,11 +62,14 @@ def smith_normal_form_helper(mat, track_dict):
         i, j = best_pivot_facade(mat)
         row_swap(mat, i, 0, track_mat=track_dict['row_op'])
         col_swap(mat, j, 0, track_mat=track_dict['col_op'])
+    if mat[0, 0] < 0:
+        scale_row(mat, 0, -1, track_mat=track_dict['row_op'])
     return
 
 def solve_diagonal(mat, track_dict):
     '''Reduces a diagonal matrix to another diagonal matrix with the
     appropriate divisibility property: each diagonal entry divides the next.'''
+    assert type(track_dict) == dict
     if is_diagonal(mat) and diagonal_chaining(mat):
         # Just make sure that this element is positive
         if mat[0, 0] < 0:
@@ -80,10 +83,14 @@ def solve_diagonal(mat, track_dict):
         p = np.unravel_index(i, mat.shape)
         if not divides(pivot, mat[p]):
             col_ind = p[1]
-            # Adding the column to the facade slates it for reduction.
             col_combine(mat, 0, col_ind, 1, track_mat=track_dict['col_op'])
             smith_normal_form_helper(mat, track_dict)
             x = divides(mat[0, 0], mat[p])
+            #if not x:
+            #    print mat[0, 0]
+            #    print mat[p]
+            #    print mat.shape
+            #assert x
             pivot = mat[0, 0]
     solve_diagonal(mat[1:, 1:], track_dict)
     solve_diagonal(mat, track_dict)
@@ -93,11 +100,13 @@ def _smith_normal_form(mat, track_dict):
     '''Destructively updates the matrix to change it to its smith_normal_form'''
     if np.all(mat == np.zeros(mat.shape)):
         return mat
+    assert type(track_dict) == dict
     i, j = best_pivot_whole(mat)
     row_swap(mat, i, 0, track_mat=track_dict['row_op'])
     col_swap(mat, j, 0, track_mat=track_dict['col_op'])
     # Reduce mat to a block matrix form
     smith_normal_form_helper(mat, track_dict)
+    assert all_zero_facade(mat)
     # Diagonalize the sub block
     _smith_normal_form(mat[1:, 1:], track_dict)
     # Rearrange the diagonal to invariant factor form
@@ -117,6 +126,7 @@ def smith_normal_form(mat):
     right_track = np.matrix(np.eye(x.shape[1])).astype(int)
     left_track = np.matrix(np.eye(x.shape[0])).astype(int)
     tracker = {'row_op':left_track, 'col_op':right_track}
+    assert type(tracker) == dict
     _smith_normal_form(x, tracker)
     return x, (tracker['row_op'], tracker['col_op'])
 
@@ -154,8 +164,6 @@ def best_pivot_facade(mat, debug=False):
         norm = functools.partial(col_row_norm, mat)
     if all_zero_facade(mat):
         return (0, 0)
-    # Slices row 1 and column 1 off, then searches through
-    # them sequentially for the index of minimal norm.
     row = mat[0, 1:]
     row_iter = np.ndenumerate(row)
     col = mat[1:, 0]
