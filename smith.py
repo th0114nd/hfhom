@@ -35,7 +35,7 @@ def gcd(a, b, xtra=True):
 def xgcd(a, b):
     '''Used to find the gcd of positive numbers a, b and track the necessary
     solutions by flip flopping between a larger and smaller.
-    Courtesy of rcampbell at umbc.edu.'''
+    Courtesy of rcampbel at umbc.edu/~rcampbel/Computers/Python/numbthy.html'''
     u1 = 1
     v1 = 0
     u2 = 0
@@ -69,7 +69,8 @@ def is_diagonal(mat):
     return np.all(diag == 0)
 
 def diagonal_chaining(mat):
-    for i in xrange(mat.shape[0] - 1):
+    length = min(mat.shape[0], mat.shape[1])
+    for i in xrange(length - 1):
         if not divides(mat[i, i], mat[i + 1, i + 1]):
             return False
     return True
@@ -109,14 +110,11 @@ def smith_normal_form_helper(mat, track_dict):
         i, j = best_pivot_facade(mat)
         row_swap(mat, i, 0, track_mat=track_dict['row_op'])
         col_swap(mat, j, 0, track_mat=track_dict['col_op'])
-    if mat[0, 0] < 0:
-        scale_row(mat, 0, -1, track_mat=track_dict['row_op'])
     return
 
 def solve_diagonal(mat, track_dict):
     '''Reduces a diagonal matrix to another diagonal matrix with the
     appropriate divisibility property: each diagonal entry divides the next.'''
-    assert type(track_dict) == dict
     if is_diagonal(mat) and diagonal_chaining(mat):
         # Just make sure that this element is positive
         if mat[0, 0] < 0:
@@ -130,14 +128,10 @@ def solve_diagonal(mat, track_dict):
         p = np.unravel_index(i, mat.shape)
         if not divides(pivot, mat[p]):
             col_ind = p[1]
+            # Adding the column to the facade slates it for reduction.
             col_combine(mat, 0, col_ind, 1, track_mat=track_dict['col_op'])
             smith_normal_form_helper(mat, track_dict)
             x = divides(mat[0, 0], mat[p])
-            #if not x:
-            #    print mat[0, 0]
-            #    print mat[p]
-            #    print mat.shape
-            #assert x
             pivot = mat[0, 0]
     solve_diagonal(mat[1:, 1:], track_dict)
     solve_diagonal(mat, track_dict)
@@ -147,13 +141,11 @@ def _smith_normal_form(mat, track_dict):
     '''Destructively updates the matrix to change it to its smith_normal_form'''
     if np.all(mat == np.zeros(mat.shape)):
         return mat
-    assert type(track_dict) == dict
     i, j = best_pivot_whole(mat)
     row_swap(mat, i, 0, track_mat=track_dict['row_op'])
     col_swap(mat, j, 0, track_mat=track_dict['col_op'])
     # Reduce mat to a block matrix form
     smith_normal_form_helper(mat, track_dict)
-    assert all_zero_facade(mat)
     # Diagonalize the sub block
     _smith_normal_form(mat[1:, 1:], track_dict)
     # Rearrange the diagonal to invariant factor form
@@ -168,12 +160,11 @@ def smith_normal_form(mat):
     Use: Computes the invariant factor description from a presentation of a module,
     ZZ ^ (mat.length) / < mat.columns >'''
     x = np.matrix.copy(mat)
-    # right watches the change of basis via the unimodular matrix to the right.
+    # right_track watches the change of basis via the unimodular matrix to the right.
     # It's rows are the generators of the presented module.
     right_track = np.matrix(np.eye(x.shape[1])).astype(int)
     left_track = np.matrix(np.eye(x.shape[0])).astype(int)
     tracker = {'row_op':left_track, 'col_op':right_track}
-    assert type(tracker) == dict
     _smith_normal_form(x, tracker)
     return x, (tracker['row_op'], tracker['col_op'])
 
@@ -224,14 +215,14 @@ def best_pivot_facade(mat, debug=False):
         norm = functools.partial(col_row_norm, mat)
     if all_zero_facade(mat):
         return (0, 0)
+    # Slices row 1 and column 1 off, then searches through
+    # them sequentially for the index of minimal norm.
     row = mat[0, 1:]
     row_iter = np.ndenumerate(row)
     col = mat[1:, 0]
     col_iter = np.ndenumerate(col)
     mins = []
     min_found = None
-    # Should be larger than any of the row/column elems.
-    assert min_found != 0
     for p, val in row_iter:
         if val == 0:
             continue
@@ -245,9 +236,8 @@ def best_pivot_facade(mat, debug=False):
     return select_smallest_index(mins)
 
 def could_be_min(norm, mins, min_found, p, val):
-    '''Compares norm(i, j) with the previously found minimum. Adds to 
-    the list for later processing if equal, or clears the list if smaller.'''
-    # TODO: 5 arguments is far too many!
+    '''Compares norm(p) with the previously found minimum. Adds to 
+    the list mins for later processing if equal, or clears the list if smaller.'''
     if val != 0:
         i, j = p
         poss = norm(i, j)
@@ -276,7 +266,7 @@ def col_promote(ind, lit_mat, big_mat):
     return bigN - litN + ind
 
 def row_promote(ind, lit_mat, big_mat):
-    '''See also row_promote. Except that this is a row in the
+    '''See also col_promote. Except that this is a row in the
     input matrix and a column in the left tracking matrix.'''
     bigN = big_mat.shape[1]
     litN = lit_mat.shape[0]
@@ -301,9 +291,6 @@ def row_swap(mat, i, l, track_mat=None):
         bigI = row_promote(i, mat, track_mat)
         bigL = row_promote(l, mat, track_mat)
         col_swap(track_mat, bigI, bigL)
-#    if i != l:
-        #print "Row swap...%d, %d" % (i, l)
-        #print mat
 
 def col_swap(mat, j, k, track_mat=None):
     temp = np.copy(mat[:, j])
@@ -323,7 +310,6 @@ def scale_col(mat, i, c, track_mat=None):
         print "After scaling column {0} by a factor of {1}: ".format(i, c) 
         print mat 
     if track_mat is not None:
-        assert c ** 2 == 1
         bigI = col_promote(i, mat, track_mat)
         scale_row(track_mat, bigI, c)
 
@@ -333,7 +319,6 @@ def scale_row(mat, i, c, track_mat=None):
         print "After scaling row {0} by a factor of {1}: ".format(i, c)
         print mat
     if track_mat is not None:
-        assert c ** 2 == 1
         bigI = row_promote(i, mat, track_mat)
         print bigI
         print c
