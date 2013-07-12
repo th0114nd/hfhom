@@ -4,57 +4,9 @@ import itertools
 import fractions as f
 import numpy.linalg as la
 import sys
+from number_theory import *
 
 verbose = False
-
-def divides(a, b):
-    ''' Checks if a | b'''
-    if a == 0:
-        return b == 0
-    else:
-        return b % a == 0
-
-def gcd(a, b, xtra=True):
-    '''Computes the gcd of a, and b: "The least positive integer g such
-    that g | a, g | b, and if d | a, b then d | g, except for the case
-    when a and b are 0. gcd(0, 0) = 0 is not positive". This routine
-    also returns a pair of numbers u, v such that u * a + b * v = gcd(a, b).'''
-    g, p = xgcd(np.absolute(a), np.absolute(b))
-    if g < 0:
-        p = [-p[0], -p[1]]
-    if a < 0:
-        p[0] = -p[0]
-    if b < 0:
-        p[1] = -p[1]
-
-    if xtra:
-        return np.absolute(g), p
-    else:
-        return np.absolute(g)
-
-def xgcd(a, b):
-    '''Used to find the gcd of positive numbers a, b and track the necessary
-    solutions by flip flopping between a larger and smaller.
-    Courtesy of rcampbel at umbc.edu/~rcampbel/Computers/Python/numbthy.html'''
-    u1 = 1
-    v1 = 0
-    u2 = 0
-    v2 = 1
-    if b == 0:
-        return a, [u1, v1]
-    while True:
-        quot = -(a // b)
-        a = a % b
-        u1 = u1 + quot * u2
-        v1 = v1 + quot * v2
-        if a == 0:
-            return b, [u2, v2]
-        quot = -(b // a)
-        b = b % a
-        u2 = u2 + quot * u1
-        v2 = v2 + quot * v1
-        if b == 0:
-            return a, [u1, v1]
         
 def nonzero_filter(mat):
     '''Returns a copy of mat with no zero elements, probably
@@ -171,19 +123,6 @@ def smith_normal_form(mat):
 def all_zero_facade(mat):
     return np.all(mat[0,1:] == 0) and np.all(mat[1:, 0] == 0)
 
-def div_alg(a, b):
-    ''' Computes q, r such that a = q * b + r with |r| < b/2.'''
-    if b == 0:
-        return 0, a
-    b_pos = np.absolute(b)
-    a_pos = np.absolute(a)
-    q = a // b
-    r1 = a % b
-    r2 = a % -b
-    if (np.absolute(r1) <= np.absolute(r2)):
-        return q, r1
-    else:
-        return q + 1, r2
 
 def col_row_norm(mat, i, j):
     '''Computes the product of the euclidean norm of the row and column
@@ -320,8 +259,6 @@ def scale_row(mat, i, c, track_mat=None):
         print mat
     if track_mat is not None:
         bigI = row_promote(i, mat, track_mat)
-        print bigI
-        print c
         scale_col(track_mat, bigI, c)
 
 def col_combine(mat, addTo, scaling_col, scale_amt, track_mat=None):
