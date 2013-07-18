@@ -335,9 +335,8 @@ def make_objects(vertices, edges, inter, num_vert, num_edges, num_inter):
 
 #
 # Plink loading
-#
-import time
-def load_plink(filename=''):
+#   
+def load_plink(filename='', gui=False):
     '''
     Returns the tuple (file_string, vertices, edges, inter, #vertices, #edges,
                        #intersections).
@@ -352,6 +351,8 @@ def load_plink(filename=''):
     
     If no input is specified, filename defaults to '', and the Plink editor
     opens so the user can draw a link. You MUST save this file.
+    
+    FIXME: gui parameter
     '''
     if filename == '':
         string = True
@@ -378,8 +379,7 @@ def load_plink(filename=''):
         
         # open the save dialog
         filename = None
-        root = Tkinter.Tk()
-        root.withdraw()        
+        Tkinter.Tk().withdraw() # hide random window
         while not filename:
             filename = tkFileDialog.asksaveasfilename(**options)
             if filename:
@@ -395,9 +395,9 @@ def load_plink(filename=''):
     editor.window.withdraw() # hide the window
     
     # check closed and alternating
-    if not check_input.is_closed(editor):
+    if not is_closed(editor):
         raise DrawingError('Not all links are closed!')
-    if not check_input.is_alternating(editor):
+    if not is_alternating(editor):
         editor.window.withdraw()
         print 'Link is not alternating.'
         print 'Press [Enter] to make link alternating (will modify file),',

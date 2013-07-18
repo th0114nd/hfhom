@@ -167,6 +167,8 @@ def s_quad_form(listdata):
     reversed, False otherwise
     
     Input: listdata [e, (p1, q1),...,(pr, qr)]
+    Note: You should run correct_form on listdata; s_quad_form does not do this
+          automatically
     
     The 'star-like' tree is formed as follows:
     Center node is a vertex with weight -e.
@@ -180,10 +182,6 @@ def s_quad_form(listdata):
     Q(v, v) = m(v), where m is the weight of the vertex
     Q(v, w) = 1 if v, w are connected by an edge, 0 otherwise
     '''
-    if not correct_form(listdata):
-        raise SeifertInputError, \
-        '''data must be of the form 
-        [e, (p1, q1), (p2, q2), ... , (pr, qr)] with gcd(pi,qi) = 1 and pi > 1'''
     new_data, minus = alter_data(listdata) # make e > 0, -pi < qi < 0
     tree = [new_data[0]] # list of weights in star tree [e, a0, a1,...]
     branch_lengths = [] # list of lengths of branches in star tree, not 
@@ -230,4 +228,8 @@ if __name__ == '__main__':
         index += 2
     print 'Inputted data:',
     print listdata
+    if not correct_form(listdata):
+        raise SeifertInputError, \
+        '''data must be of the form 
+        [e, (p1, q1), (p2, q2), ... , (pr, qr)] with gcd(pi,qi) = 1 and pi > 1'''    
     print s_quad_form(listdata)

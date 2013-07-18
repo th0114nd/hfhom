@@ -23,7 +23,6 @@ If 'filename' does not exist, prompts to download from Knotilus.
 '''
 
 import plink, StringIO
-import check_input as pl
 from knotilus_classes import *
 from knotilus_download import *
 from plink_load import angle_ccw_to_signed, vertex_update_edges, make_region,\
@@ -230,13 +229,10 @@ def load(archive, filename=False, save=False):
     Loads data and returns tuple (Vertices, Intersections, Edges, Regions), 
     of all objects from the data.
     
-    usage: python %s [-s] archive_num' % sys.argv[0]
-    OR     python %s -f filename'
+    FIXME: docstring
 
-    Optional argument -s: save the downloaded file for archive_num as
-                      'archive_num.txt'
-    -f argument: load the filename 'filename', don't download from the database
-    If 'filename' does not exist, prompts to download from Knotilus. 
+    If 'filename=True' but 'archive' does not exist, prompts to download from 
+    Knotilus. 
     '''
     if filename == True:
         while 1:
