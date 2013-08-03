@@ -1,8 +1,7 @@
 # SURF 2013
 # FILE: plink_classes.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 06.21.13
+# 08.01.13
 
 
 '''
@@ -16,9 +15,6 @@ in global variables gVertex, gEdge, gIntersection, and gRegion, respectively.
 
 import math, sys, plink
 from fractions import Fraction
-
-class DrawingError(Exception):
-    pass
 
 class VertexClass():
     def __init__(self, coords, index):
@@ -153,14 +149,14 @@ class EdgeClass():
         h = other.point2.y
         if abs(c - a) < 0.000001: # vertical
             if abs(g - e) < 0.000001:
-                raise DrawingError('Lines are parallel (both vertical)')
+                raise ValueError('Lines are parallel (both vertical)')
             return float(a), float(h - f)/float(g - e) * float(a - e) + f
         if abs(g - e) < 0.000001:
             return float(g), float(d - b)/float(c - a) * float(g - a) + b
         m1 = Fraction(d - b, c - a)
         m2 = Fraction(h - f, g - e)
         if m1 == m2:
-            raise DrawingError('Lines are parallel')
+            raise ValueError('Lines are parallel')
         # Mathematica solving:
         # Solve[{y == (d - b)/(c - a) (x - a) + b, 
         # y == (h - f)/(g - e) (x - e) + f}, {x, y}]

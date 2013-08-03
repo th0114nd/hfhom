@@ -1,8 +1,7 @@
 # Caltech SURF 2013
 # FILE: knotilus_load.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 06.27.13
+# 08.02.13
 
 '''
 This module has functions to load Knotilus data and make objects (Vertices, 
@@ -46,7 +45,7 @@ def get_coords(coords):
     third_coord = int(coords[2]) # -1 or 1 for intersection, 0 for flex pt    
     return [coords_tuple, third_coord]
 
-def load_knotilus(filename, string=False):
+def load_knotilus(filename, string=False, gui=False):
     '''
     Returns tuple (vertices, edges, inter).
     vertices: a list of the coordinates of the vertices
@@ -70,104 +69,121 @@ def load_knotilus(filename, string=False):
     inter = []    # list of intersections 
     # see docstring (under output) for more description
     
-    if string == False: # load file
-        knot = open(filename, 'r')
+    if not string: # load file
+        try:
+            knot = open(filename, 'r')
+        except:
+            if not gui:
+                print 'Cannot open file %s' % filename
+                print 'Aborting operation; please try again'
+                raise IOError('failed to open file')
+            else: # gui -> messagebox
+                tkMessageBox.showwarning('Open file','Cannot open file %s.' %filename \
+                                         +'Aborting operation; please try again.')
+                raise IOError('failed to open file')            
     else: # open string for reading like file
         knot = StringIO.StringIO(filename)
+    
+    try:
+        for i in range(4):
+            line = knot.readline() # kill off the intro lines
+            assert line != ''
+        assert line == 'Embedding for: Component 1\n'
         
-    for i in range(4):
-        line = knot.readline() # kill off the intro lines
-        assert line != ''
-    if line != 'Embedding for: Component 1\n':
-        raise BadFileError, 'corrupted file or not a Knotilus file'
-    
-    prev_inter_third = 0 # prev intersection's third coord, +/-1 (over/under)
-    # will be used to check alternating
-    
-    prev_flex_index = -1 # prev flex point's index. This is used for 'edges'.
-    # the 1st edge of each link component has prev_flex_point -1 (the last pt),
-    # but this value will be stored as a positive number (#vertices-1), where
-    # #vertices is the number of vertices for that component.
-    
-    segment = -1 # keep track of segment number. increases by 2 each time
-    # first segment = 0, last segment = -1 mod #segments
-    
-    cur_num_vert = 0 # current component's # of vertices (not intersections)
-    cur_start_index = 0 # current component's first vertex's index
-    
-    # loop through all points in the file
-    while 1:
-        coords = knot.readline()
-        if not coords: # EOF
-            edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
-            break
-        if coords[0] != '(': # signifies end of link's vertices
-            edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
-            cur_start_index += cur_num_vert # moving on to next component
-            prev_inter_third = 0 # reset alternating check
-            cur_num_vert = 0 # reset number of vertices for this component
-            continue # skip loop, start over
-        coords_tuple, third_coord = get_coords(coords)       
+        prev_inter_third = 0 # prev intersection's third coord, +/-1 (over/under)
+        # will be used to check alternating
         
-        #
-        # Intersections
-        # eg: ((coord1, coord2), (1,2), (7,8))
-        # represented as coordintates (coord1, coord2), followed by tuples for
-        # each edge. eg. (1,2) is the edge with segments 1 and 2.
-        if abs(third_coord) == 1: # intersection
+        prev_flex_index = -1 # prev flex point's index. This is used for 'edges'.
+        # the 1st edge of each link component has prev_flex_point -1 (the last pt),
+        # but this value will be stored as a positive number (#vertices-1), where
+        # #vertices is the number of vertices for that component.
+        
+        segment = -1 # keep track of segment number. increases by 2 each time
+        # first segment = 0, last segment = -1 mod #segments
+        
+        cur_num_vert = 0 # current component's # of vertices (not intersections)
+        cur_start_index = 0 # current component's first vertex's index
+        
+        # loop through all points in the file
+        while 1:
+            coords = knot.readline()
+            if not coords: # EOF
+                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
+                break
+            if coords[0] != '(': # signifies end of link's vertices
+                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
+                cur_start_index += cur_num_vert # moving on to next component
+                prev_inter_third = 0 # reset alternating check
+                cur_num_vert = 0 # reset number of vertices for this component
+                continue # skip loop, start over
+            coords_tuple, third_coord = get_coords(coords)       
             
-            # check alternating link
-            if abs(prev_inter_third) == 1 and third_coord != -prev_inter_third:
-                raise pl.DrawingError('link is not alternating')
-            prev_inter_third = third_coord         
-            
-            # check if we've already passed this intersection
-            new = True
-            index = 0 # the ith intersection
-            for intersection in inter:
-                if intersection[0] == coords_tuple:
-                    new = False
-                    break
-                index += 1
-            
-            if new == True: # new intersection => add it
-                # [coors_tuple, under, over]
-                if third_coord == -1: # under
-                    inter.append([coords_tuple, (segment, segment+1), 0])
-                else:
-                    inter.append([coords_tuple, 0, (segment, segment+1)])
-                    # note: only coords and one edge pair are known
-                    
-            else: # already passed intersection
-                if third_coord == -1: # under
-                    assert(inter[index][1] == 0), 'corrupted file'
-                    # ^ can't have both crossings be undercrossings
-                    inter[index][1] = (segment, segment+1) # add 2nd edge
-                else: # over
-                    assert(inter[index][2] == 0), 'corrupted file'
-                    inter[index][2] = (segment, segment+1)
-                    
             #
-            # Edges (one edge per intersection occurance)
-            edges.append([index, [prev_flex_index, prev_flex_index+1]])
-            # prev_flex_index, prev_flex_index+1 give indices for flex pts of
-            # edges. At the end of a specific component, will need to modify
-            # the first edge for that component: [-1, first_flex_index] needs
-            # to be [last_flex_index, first_flex_index]
-            segment += 2
-            
-        #                 
-        # Flex points (vertices): third_coord = 0
-        #
-        else:
-            vertices.append(coords_tuple)
-            prev_flex_index += 1
-            cur_num_vert += 1
-
-    knot.close()
-    assert(len(vertices) == len(edges))
-    assert(len(vertices) == 2*len(inter)) # each intersection visited twice, 
+            # Intersections
+            # eg: ((coord1, coord2), (1,2), (7,8))
+            # represented as coordintates (coord1, coord2), followed by tuples for
+            # each edge. eg. (1,2) is the edge with segments 1 and 2.
+            if abs(third_coord) == 1: # intersection
+                
+                # check alternating link
+                if abs(prev_inter_third) == 1 and third_coord != -prev_inter_third:
+                    raise pl.DrawingError('link is not alternating')
+                prev_inter_third = third_coord         
+                
+                # check if we've already passed this intersection
+                new = True
+                index = 0 # the ith intersection
+                for intersection in inter:
+                    if intersection[0] == coords_tuple:
+                        new = False
+                        break
+                    index += 1
+                
+                if new == True: # new intersection => add it
+                    # [coors_tuple, under, over]
+                    if third_coord == -1: # under
+                        inter.append([coords_tuple, (segment, segment+1), 0])
+                    else:
+                        inter.append([coords_tuple, 0, (segment, segment+1)])
+                        # note: only coords and one edge pair are known
+                        
+                else: # already passed intersection
+                    if third_coord == -1: # under
+                        assert(inter[index][1] == 0), 'corrupted file'
+                        # ^ can't have both crossings be undercrossings
+                        inter[index][1] = (segment, segment+1) # add 2nd edge
+                    else: # over
+                        assert(inter[index][2] == 0), 'corrupted file'
+                        inter[index][2] = (segment, segment+1)
+                        
+                #
+                # Edges (one edge per intersection occurance)
+                edges.append([index, [prev_flex_index, prev_flex_index+1]])
+                # prev_flex_index, prev_flex_index+1 give indices for flex pts of
+                # edges. At the end of a specific component, will need to modify
+                # the first edge for that component: [-1, first_flex_index] needs
+                # to be [last_flex_index, first_flex_index]
+                segment += 2
+                
+            #                 
+            # Flex points (vertices): third_coord = 0
+            #
+            else:
+                vertices.append(coords_tuple)
+                prev_flex_index += 1
+                cur_num_vert += 1
+    
+        knot.close()
+        
+        assert(len(vertices) == len(edges))
+        assert(len(vertices) == 2*len(inter)) # each intersection visited twice, 
                                             # but counted once
+    except:
+        if not gui: # command line
+            raise ValueError('failed to parse file. perhaps a bad file?')
+        else: # gui
+            tkMessageBox.showerror('Parsing file', 'Failed to parse file. Perhaps a bad file?')
+            raise ValueError('failed to parse file.')    
     return (vertices, edges, inter)
 
 #
@@ -224,7 +240,7 @@ def make_objects(vertices, edges, inter):
     
     return Vertices, Intersections, Edges, Regions
 
-def load(archive, filename=False, save=False):
+def load(archive, filename=False, save=False, gui=False):
     '''
     Loads data and returns tuple (Vertices, Intersections, Edges, Regions), 
     of all objects from the data.
@@ -239,7 +255,6 @@ def load(archive, filename=False, save=False):
             try:
                 data = load_knotilus(archive)
                 return make_objects(data[0], data[1], data[2])
-                break # exit since done
             except IOError: # file doesn't exist
                 print "'%s'does not exist in the current directory." % archive
                 answer = raw_input('Download from Knotilus? [y/n] ')            
@@ -278,7 +293,7 @@ def load(archive, filename=False, save=False):
         print 'Successfully saved to %s.txt' % archive
         load(archive + '.txt', True) # load file
     else: # don't save to file
-        data = load_knotilus(get_plaintext(archive), True) # True=>stringIO
+        data = load_knotilus(get_plaintext(archive,gui), True) # True=>stringIO
         return make_objects(data[0], data[1], data[2])
 
 def usage():

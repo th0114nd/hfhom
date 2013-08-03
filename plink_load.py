@@ -1,8 +1,7 @@
 # Caltech SURF 2013
 # FILE: plink_load.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 07.08.13
+# 08.01.13
 
 '''
 This module has functions to load Plink data and make objects (Vertices,
@@ -399,13 +398,19 @@ def load_plink(filename='', gui=False):
         raise DrawingError('Not all links are closed!')
     if not is_alternating(editor):
         editor.window.withdraw()
-        print 'Link is not alternating.'
-        print 'Press [Enter] to make link alternating (will modify file),',
-        change = raw_input('Enter q to quit. ')
-        if change == '':
-            print 'Modifying file to make link alternating...'
-        elif change == 'q':
-            raise DrawingError('Link is not alternating.')        
+        if not gui: # command line -> print
+            print 'Link is not alternating.'
+            print 'Press [Enter] to make link alternating (will modify txt file),',
+            change = raw_input('Enter q to quit. ')
+            if change == '':
+                print 'Modifying file to make link alternating...'
+            elif change == 'q':
+                raise ValueError('Link is not alternating.')
+        else: # gui -> popup windows
+            make_alternating = tkMessageBox.askokcancel('Warning', 'Link is not alternating. Select OK to make link alternating (will modify txt file). Select Cancel to abort.')
+            if not make_alternating:
+                #tkMessageBox.showerror('Error','Link is not alternating. Aborting attempt.')
+                raise ValueError('Link is not alternating.')
         editor.make_alternating()
         # overwrite file
         myfile = open(filename, 'w')
@@ -413,38 +418,51 @@ def load_plink(filename='', gui=False):
         myfile.close()
     
     # load
-    knot = open(filename, 'r')
-    '''if not string: # load file
+    try:
         knot = open(filename, 'r')
-    else: # open string for reading
-        knot = StringIO.StringIO(file_string)'''
+    except:
+        if not gui:
+            print 'Cannot open file %s' % filename
+            print 'Aborting operation; please try again'
+            raise IOError('failed to open file')
+        else: # gui -> messagebox
+            tkMessageBox.showwarning('Open file','Cannot open file %s. Aborting operation; please try again.' % filename)
+            raise IOError('failed to open file')
     
     knot.readline() # kill the first line
-    num_links = int(knot.readline())
+    try: # try to parse the file
+        num_links = int(knot.readline())
+        
+        # 1st section - number of the vertex starting each link - don't need this
+        for i in range(num_links):
+            knot.readline() # just get rid of these lines
+            
+        # 2nd section - vertices
+        num_vert = int(knot.readline())
+        for j in range(num_vert):
+            coord = knot.readline().split()
+            vertices.append((int(coord[0]), int(coord[1])))
+            
+        # 3rd section - edges
+        num_edges = int(knot.readline())
+        for k in range(num_edges):
+            edge = knot.readline().split()
+            edges.append((int(edge[0]), int(edge[1])))
+            
+        # 4th section - intersections (tuples of which edges intersect)
+        num_inter = int(knot.readline())
+        for l in range(num_inter):
+            cur_inter = knot.readline().split()
+            inter.append((int(cur_inter[0]), int(cur_inter[1])))
+        
+        assert knot.readline().split()[0] == '-1'
+    except:
+        if not gui: # command line
+            raise ValueError('failed to parse file. perhaps a bad file?')
+        else: # gui
+            tkMessageBox.showerror('Parsing file', 'Failed to parse file. Perhaps a bad file?')
+            raise ValueError('failed to parse file.')
     
-    # 1st section - number of the vertex starting each link - don't need this
-    for i in range(num_links):
-        knot.readline() # just get rid of these lines
-        
-    # 2nd section - vertices
-    num_vert = int(knot.readline())
-    for j in range(num_vert):
-        coord = knot.readline().split()
-        vertices.append((int(coord[0]), int(coord[1])))
-        
-    # 3rd section - edges
-    num_edges = int(knot.readline())
-    for k in range(num_edges):
-        edge = knot.readline().split()
-        edges.append((int(edge[0]), int(edge[1])))
-        
-    # 4th section - intersections (tuples of which edges intersect)
-    num_inter = int(knot.readline())
-    for l in range(num_inter):
-        cur_inter = knot.readline().split()
-        inter.append((int(cur_inter[0]), int(cur_inter[1])))
-        
-    assert knot.readline().split()[0] == '-1'
     knot.close()
     if filename != '':
         return (vertices, edges, inter, num_vert, num_edges, num_inter)

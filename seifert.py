@@ -1,17 +1,17 @@
 # Caltech SURF 2013
 # FILE: seifert.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 07.12.13
+# 08.02.13
 
 import numpy, sys
 from fractions import Fraction, gcd
 from graph_quad import symmetric
+import tkMessageBox
 
 class SeifertInputError(Exception):
     pass
 
-def correct_form(listdata):
+def correct_form(listdata, gui=False):
     '''
     Return True if listdata is in the correct form, False if listdata is not in 
     the correct form.
@@ -21,9 +21,24 @@ def correct_form(listdata):
     '''
     if type(listdata[0]) != int:
         return False
-    for pair in listdata[1:]:
+    for index, pair in enumerate(listdata[1:]):
         if pair[1] == 0: # qi = 0 => ignore pair
-            print 'Warning: qi = 0, ignoring that pair'
+            if index == 1:
+                suffix = 'st'
+            elif index == 2:
+                suffix = 'nd'
+            elif index == 3:
+                suffix = 'rd'
+            else:
+                suffix = 'th'  
+                
+            if not gui:
+                print 'Warning: q%i = 0, ignoring the %i%s pair' \
+                      %(index, index, suffix)
+            else: # gui
+                tkMessageBox.showwarning('Warning',\
+                                         'Warning: q%i=0, ignoring the %i%s pair'\
+                                         %(index, index, suffix))
         else:
             if len(pair) != 2 or type(pair[0]) != int or type(pair[1]) != int:
                 return False
@@ -213,6 +228,7 @@ def usage():
     sys.exit(1)
 
 if __name__ == '__main__':
+    # This is obsolete...
     if len(sys.argv) < 2:
         usage()
     stringdata = sys.argv[1:]

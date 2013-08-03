@@ -1,13 +1,13 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 07.08.13
+# 08.01.13
 
 import sys
 import cStringIO
 import time
 import urllib2
+import tkMessageBox
 
 '''
 This module downloads the plaintext file corresponding to a link from the 
@@ -50,7 +50,7 @@ def get_page_source(url):
     page.close()
     return page_source
 
-def gauss_code(archive):
+def gauss_code(archive, gui=False):
     '''
     Given an archive number, gets the page source, then finds and returns
     the Knotilus Gauss code as a string, of the form 
@@ -63,6 +63,8 @@ def gauss_code(archive):
     '''
     # make sure archive is in the correct from ax-b-c for ints a,b,c
     if not valid_archive_form(archive):
+        #if gui: # ALREADY CHECKED BY gui.py
+        #    tkMessageBox.showerror('Archive number form', 'archive num must be of form ax-b-c, for a,b,c ints')
         raise KURLError('archive num must be of form ax-b-c, for a,b,c ints')
     
     url = 'http://knotilus.math.uwo.ca/draw.php?archive=%s&javadraw=off'%archive
@@ -77,6 +79,9 @@ def gauss_code(archive):
             valid = True # valid url
             break
     if valid == False: # didn't find the Gauss code
+        if gui:
+            tkMessageBox.showwarning('Archive number', 'Not a valid archive number.'\
+                                   +'Aborting now.')
         raise KURLError('not a valid archive number')
     
     text = correct_line.split()
@@ -88,7 +93,7 @@ def gauss_code(archive):
     # gauss is of the form '&knot=1,2,3,4:1,2,3,4&std=1,2,3,4:1,2,3,4'
     return gauss
 
-def get_plaintext(archive, max_attempts=12):
+def get_plaintext(archive, gui=False, max_attempts=12):
     '''
     Given the archive number code, returns the plaintext file download from 
     Knotilus.
@@ -99,23 +104,37 @@ def get_plaintext(archive, max_attempts=12):
     # http://knotilus.math.uwo.ca/dl.php?r=0&m=0&a=0&i=0&ext=-1
     # &knot=(gauss code)&std=(gauss code)
     # &type=txt
-    gauss = gauss_code(archive)
+    gauss = gauss_code(archive, gui)
     url= 'http://knotilus.math.uwo.ca/dl.php?r=0&m=0&a=0&i=0&ext=-1%s&type=txt'\
         % gauss
     plaintext = get_page_source(url)
+    loaded = False
     
     start = time.time()
     for i in range(max_attempts):
         if plaintext != '': # loaded/annealed completely
+            loaded = True
             break
         # not loaded/annealed completely => keep refreshing url_load to load it
         url_load = 'http://knotilus.math.uwo.ca/show.php?' + \
             'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
         page = urllib2.urlopen(url_load)
         print 'Annealing...'
+        if i == 1 and gui: # show on second attempt
+            tkMessageBox.showinfo('Annealing', \
+                                  'Annealing...this may take up to 20 seconds,'\
+                                  +' depending on network connections.')
         time.sleep(1.5) # 1.5 seconds seems around the best waiting time
         plaintext = get_page_source(url)        
         page.close()
+    if not loaded:
+        if not gui:
+            print 'failed to anneal in %i attempts. please try again and check internet connection.' %max_attempts
+        else:
+            retry = tkMessageBox.showwarning('Annealing', 'Failed to anneal in %i attempts.' \
+                                     + 'Press OK to try again, Cancel to abort.' %max_attempts)
+            if retry:
+                pass # ??? TODO retry...
     print 'took %g sec to anneal' % (time.time() - start)
     return plaintext
 

@@ -1,30 +1,36 @@
 # Caltech SURF 2013
-# FILE: gui.py
-# 07.16.13
+# FILE: gui3.py
+# 08.02.13
 
 '''
 Main user interface for entering link data.
+less popup windows than gui.py
 '''
 
 # main/start window dimensions
-windowx = 400
-windowy = 100
+windowx = 450
+windowy = 450
 
 import traceback
 from Tkinter import *
-import tkFileDialog, tkMessageBox, ImageTk
+import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont
 from graph_quad import *
 from knotilus_download import valid_archive_form
 from seifert import s_quad_form, correct_form
 
+def regions_to_quad(regions):
+    '''input list of regions, output numpy array for quadratic form'''
+    Nodes = [NodeClass(i) for i in range(len(regions))]
+    t = edges_regions(Nodes,regions)
+    m = maximal_subtree(t, Nodes)
+    minus = minus_maximal_subtree(t, m)
+    return quad_form(t, minus, Nodes)
+
 class StartWindow(Frame):
-    def __init__(self, master):
+    def __init__(self, master):        
         self.master = master
         
         self.master.title('Hfhom')
-        
-        frame = Frame(master, width=windowx, height=windowy, bg='gray')
-        #frame.pack()
         
         # http://effbot.org/tkinterbook/menu.htm
         # make menu
@@ -33,25 +39,13 @@ class StartWindow(Frame):
         filemenu = Menu(self.menubar, tearoff=0)
         
         # File > New options
-        submenu = Menu(filemenu, tearoff=0)
-        submenu.add_command(label='Plink', command=self.new_plink)
-        submenu.add_command(label='Knotilus', command=self.new_knotilus)
-        submenu.add_command(label='Seifert data', command=self.seifert)
-        submenu.add_command(label='Dehn surgery', command=self.dehn)
-        filemenu.add_cascade(label='New', menu=submenu)
-        
-        filemenu.add_command(label='Open file...', command=self.loadfile)
-        filemenu.add_separator()
         filemenu.add_command(label='Exit', command=root.quit)
         self.menubar.add_cascade(label='File', menu=filemenu)
     
         # View
         viewmenu = Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label='View', menu=viewmenu)
-        viewmenu.add_command(label='Show original link', \
-                             command=self.show_original)
-        viewmenu.add_command(label='Show shaded link', command=self.show_shaded)
-        
+
         # Help
         helpmenu = Menu(self.menubar, tearoff=0)
         helpmenu.add_command(label='Instructions', command=self.help)
@@ -60,14 +54,35 @@ class StartWindow(Frame):
         
         master.config(menu=self.menubar)
         
-        Label(master, text='Correction terms: ').pack()
-        Label(master, text='Actually just quadratic form...').pack()
+        # Title
+        Label(master, text='Heegaard Floer Correction Terms', \
+              font=tkFont.Font(weight='bold')).pack(anchor='w')        
         
-        knotimage = ImageTk.PhotoImage(file='23x-1-1.png')
-        canvas = Canvas(frame, bg="black", width=500, height=500)
+        # Banner image
+        image = Image.open('banner_small.png')
+        knotimage = ImageTk.PhotoImage(image)
+        
+        bannerlabel = Label(image=knotimage)
+        bannerlabel.image = knotimage # keep a reference! (else garbage collected)
+        bannerlabel.pack(anchor='w')            
+        
+        # Subtitle
+        Label(master, text='Actually just quadratic form...').pack(anchor='w')
+        
+        # useful stuff
+        knotilus = KnotilusBox(master)
+        plink = PlinkBox(master)
+        seifert = SeifertBox(master)
+        
+        # Banner image again        
+        bannerlabel2 = Label(image=knotimage)
+        bannerlabel2.image = knotimage # keep a reference! (else garbage collected)
+        bannerlabel2.pack(expand=1,anchor='w')  
+        
+        #canvas = Canvas(frame, bg="black", width=500, height=500)
         #canvas.pack()        
-        canvas.create_image(150, 150, image=knotimage)
-        canvas.pack()
+        #canvas.create_image(150, 150, image=knotimage)
+        #canvas.pack()
             
         #frame.pack()
         
@@ -79,15 +94,18 @@ class StartWindow(Frame):
         options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
         filename = tkFileDialog.askopenfilename(**options)
         # TODO load(filename) - must also determine Plink vs. Knotilus
-        plinkknotilus = LoadPopup(self.master)
-        self.master.wait_window(plinkknotilus.top)
+        if filename:
+            plinkknotilus = LoadPopup(self.master)
+            self.master.wait_window(plinkknotilus.top)
+        else: # no file selected (canceled)
+            return
         
         try:
-            if plinkknotilus.plink == True:
-                data = load_plink(filename)
+            if plinkknotilus.plink:
+                data = load_plink(filename,gui=True)
                 regions = make_objects(data[0],data[1],data[2],data[3],data[4],\
                                        data[5])[3]
-            elif plinkknotilus.plink == False: # knotilus
+            elif not plinkknotilus.plink: # knotilus
                 regions = load(filename, True, False)[3]
             else: # canceled
                 return
@@ -105,17 +123,7 @@ class StartWindow(Frame):
         # until Hfhom window is closed...
         pass
         
-    def new_knotilus(self):
-        self.k = Knotilus_popup(self.master)
-        self.master.wait_window(self.k.top)
-        
-        regions = load(self.k.archive_num, False, False)[3]      
 
-        quad = self.regions_to_quad(regions)
-        
-        # TODO: ouptut correction terms not quad
-        self.output = OutputWindow(self.master, quad, self.k.archive_num)
-        self.master.wait_window(self.output.top)
         
     def seifert(self):
         self.p = Seifert_popup(self.master)
@@ -126,13 +134,7 @@ class StartWindow(Frame):
         self.output = OutputWindow(self.master, quad[0], self.p.data)
         self.master.wait_window(self.output.top)
      
-    def regions_to_quad(self, regions):
-        '''input list of regions, output numpy array for quadratic form'''
-        Nodes = [NodeClass(i) for i in range(len(regions))]
-        t = edges_regions(Nodes,regions)
-        m = maximal_subtree(t, Nodes)
-        minus = minus_maximal_subtree(t, m)
-        return quad_form(t, minus, Nodes)         
+      
     
     def dehn(self):
         print 'dehn'
@@ -149,89 +151,183 @@ class StartWindow(Frame):
     def help(self):
         print 'help'    
 
-class LoadPopup(object):
-    '''choose Plink vs Knotilus loading'''
-    def __init__(self, master):
-        self.top = Toplevel(master)
-        self.plink = None
-        Label(self.top, text='Parse selected file as...').pack()
-        Button(self.top, text='Plink', command=self.loadplink).pack(side=LEFT)
-        Button(self.top, text='Cancel', command=self.exit).pack(side=RIGHT)
-        Button(self.top, text='Knotilus', command=self.loadknotilus).pack(side=RIGHT)
-    
-    def loadplink(self):
-        self.plink = True
-        self.exit()
 
-    def loadknotilus(self):
-        self.plink = False
-        self.exit()
-    
-    def exit(self):
-        self.top.destroy()
-
-class Knotilus_popup(object):
+class KnotilusBox(object):
     '''Enter Knotilus archive number'''
     def __init__(self, master):
         self.master = master
-        self.top = Toplevel(master)
-        self.top.title('Knotilus Archive')
         
-        self.archive_num = 'hi'
+        kframe = LabelFrame(master, text='Knotilus', padx=5, pady=5)
         
-        text = Label(self.top, text='Enter archive number (ax-b-c).\n' +\
-                     'Press <Enter> when finished.')
-        text.pack(side = LEFT)
+        # new Knotilus (download from database)
+        text = Label(kframe, text='Enter archive number (ax-b-c).')
+        text.grid(row=0, column=0)
+        Button(kframe, text='Go', command=self.knotilus).grid(row=0, column=2)
+                
+        self.entry = Entry(kframe)
+        self.entry.grid(row=0, column=1)
         
-        self.entry = Entry(self.top)
-        self.entry.pack(side = RIGHT)
-
-        self.entry.bind('<Return>', self.get_archive)
-    
-    def get_archive(self, event):
+        # load Knotilus file
+        text2 = Label(kframe, text='Open saved Knotilus file')
+        text2.grid(row=1, column=0)
+        Button(kframe, text='Open', command=self.k_load_file).grid(row=1, column=1, sticky='W')
+      
+        kframe.pack(padx=15, pady=10, anchor='w')
+            
+    def knotilus(self):
         # will run loading and correction terms later... TODO
         self.archive_num = self.entry.get()
         if not valid_archive_form(self.archive_num):
             tkMessageBox.showwarning('Invalid archive form.\n',\
                     'Archive number must have form ax-b-c, for ints a,b,c. ' +\
-                    'Please try again, or close the Knotilus Archive input window.')
+                    'Please try again.')
         else:
-            self.exit()
+            regions = load(self.archive_num, False, False, gui=True)[3]      
     
-    def exit(self):
-        self.top.destroy()
+            quad = regions_to_quad(regions)
+            
+            # TODO: ouptut correction terms not quad
+            self.output = OutputWindow(self.master, quad, self.archive_num)
+            #self.master.wait_window(self.output.top)
+            
+            # TODO: clear input in entry box
+    
+    def k_load_file(self):
+        '''select file to load'''
+        # open file options
+        options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        filename = tkFileDialog.askopenfilename(**options)
 
-class Seifert_popup(object):
+        if filename == '': # canceled
+            return
+        
+        try:
+            regions = load(filename, True, False)[3]
+        except Exception as error:
+            tkMessageBox.showwarning('Loading', \
+                                     'Loading failed - %s%s'%(type(error),filename))
+            print traceback.print_exc()
+            return
+        
+        quad = regions_to_quad(regions)
+        
+        self.output = OutputWindow(self.master, quad, filename)
+        #self.master.wait_window(self.output.top)
+
+class PlinkBox(object):
+    '''Plink loading'''
+    def __init__(self, master):
+        self.master = master
+        
+        pframe = LabelFrame(master, text='Plink/SnapPy', padx=5, pady=5)
+        
+        # new Plink???
+        text = Label(pframe, text='Create a new Plink/SnapPy file.')
+        text.grid(row=0, column=0)
+        Button(pframe, text='Create New', command=self.new_plink).grid(row=0, column=1)
+        
+        # load Plink file
+        text2 = Label(pframe, text='Load existing Plink file')
+        text2.grid(row=1, column=0)
+        Button(pframe, text='Open', command=self.p_load_file).grid(row=1, column=1, sticky='W')
+      
+        pframe.pack(padx=15, pady=10, anchor='w')
+    
+    def new_plink(self):
+        pass
+        
+    def plink(self):
+        data = load_plink(filename,gui=True)
+        regions = make_objects(data[0],data[1],data[2],data[3],data[4],\
+                                               data[5])[3]
+        quad = regions_to_quad(regions)
+        
+        # TODO: ouptut correction terms not quad
+        OutputWindow(self.master, quad, self.archive_num)
+        #self.master.wait_window(self.output.top)
+            
+    def p_load_file(self):
+        '''select file to load'''
+        # open file options
+        options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        filename = tkFileDialog.askopenfilename(**options)
+        # TODO load(filename) - must also determine Plink vs. Knotilus
+        if filename == '': # no file selected (canceled)
+            return
+        
+        try:
+            data = load_plink(filename,gui=True)
+            regions = make_objects(data[0],data[1],data[2],data[3],data[4],\
+                                   data[5])[3]            
+        except Exception as error:
+            tkMessageBox.showwarning('Loading', \
+                                     'Loading failed - %s%s'%(type(error),filename))
+            print traceback.print_exc()
+            return
+        
+        quad = regions_to_quad(regions)
+        OutputWindow(self.master, quad, filename)
+        #self.master.wait_window(output.top)        
+
+class SeifertBox(object):
     '''Enter Seifert data'''
     def __init__(self, master):
         self.master = master
-        self.top = Toplevel(master)
-        self.top.title('Seifert')
         
-        self.data = []
+        sframe = LabelFrame(master, text='Seifert', padx=5, pady=5)
+        text = Label(sframe, text='Enter Seifert data as list\n' +\
+                     '[e,(p1,q1),...,(pr,qr)]')
+        text.grid(row=0, column=0)
+        Button(sframe, text='Go', command=self.get_seifert).grid(row=0, column=2)
+                
+        self.entry = Entry(sframe)
+        self.entry.grid(row=0, column=1)
         
-        text = Label(self.top, text='Enter Seifert data.\n' +\
-                     'Press <Enter> when finished.')
-        text.pack(side = LEFT)
-        
-        self.entry = Entry(self.top)
-        self.entry.pack(side = RIGHT)
-
-        self.entry.bind('<Return>', self.get_seifert)
+        sframe.pack(padx=15, pady=10, anchor='w')
     
-    def get_seifert(self, event):
+    def get_seifert(self):
         # will run loading and correction terms later... TODO
-        self.data = eval(self.entry.get()) # TODO: put in help file - eval lets you evaluate stuff...
-        if not correct_form(self.data):
+        stringdata = self.entry.get()
+        try:
+            if stringdata == '':
+                raise ValueError('empty string')            
+            stringdata.replace(' ','') # remove all spaces
+            data = []
+            
+            stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
+            stringdata = stringdata.split(',(')
+            data.append(int(stringdata[0])) # append e
+            for pair in stringdata[1:]:
+                pairlist = pair.split(',')
+                pairlist[0] = int(pairlist[0])
+                pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
+                data.append(tuple(pairlist))
+        except:
+            tkMessageBox.showwarning('Failed to parse data.',
+                    'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
+                    'where e and the pi,qi are ints, pi > 1, and gcd(pi,qi) = 1. ' +\
+                    'Please try again, or close the Seifert input window.')
+            print traceback.print_exc()            
+            return
+        #self.data = eval(self.entry.get()) # TODO: put in help file - eval lets you evaluate stuff...
+        if not correct_form(data, gui=True):
             tkMessageBox.showwarning('Invalid data form.',
                     'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
-                    'where e and the pi,qi are ints, pi > 1, and gcd(pi,qi) = 1.' +\
+                    'where e and the pi,qi are ints, pi > 1, and gcd(pi,qi) = 1. ' +\
                     'Please try again, or close the Seifert input window.')
+            print traceback.print_exc()
+            return
         else:
-            self.exit()
+            quad = s_quad_form(data)
+        
+            OutputWindow(self.master, quad[0], data)
+            #self.master.wait_window(self.output.top)
     
-    def exit(self):
-        self.top.destroy()
+
         
 class OutputWindow(object):
     '''Print output'''
