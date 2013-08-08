@@ -1,11 +1,10 @@
 # Caltech SURF 2013
 # FILE: plink_classes_tests.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 06.25.13
+# 08.08.13
 
 '''
-Tests for classes.py
+Tests for plink_classes.py
 '''
 
 from plink_classes import *

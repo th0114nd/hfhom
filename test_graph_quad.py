@@ -1,8 +1,7 @@
 # Caltech SURF 2013
 # FILE: graph_quad_tests.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
-# 06.27.13
+# 08.08.13
 
 '''
 Tests for graph_quad.py
@@ -65,10 +64,10 @@ def knotilus_load_objects(archive):
     return edges_regions(gNodes, gRegions), gNodes
 
 
-edge_list_p1, nodes_p1 = plink_load_objects('../testing/t1_p_multiloop.txt')
-edge_list_p2, nodes_p2 = plink_load_objects('../testing/t2_p_background.txt')
-edge_list_p3, nodes_p3 = plink_load_objects('../testing/t3_p_multiloop_background.txt')
-edge_list_p4, nodes_p4 = plink_load_objects('../testing/t4_p_normal.txt')
+edge_list_p1, nodes_p1 = plink_load_objects('testing/t1_p_multiloop.txt')
+edge_list_p2, nodes_p2 = plink_load_objects('testing/t2_p_background.txt')
+edge_list_p3, nodes_p3 = plink_load_objects('testing/t3_p_multiloop_background.txt')
+edge_list_p4, nodes_p4 = plink_load_objects('testing/t4_p_normal.txt')
 edge_list_k1, nodes_k1 = knotilus_load_objects('10x-2-1')
 edge_list_k2, nodes_k2 = knotilus_load_objects('7x-1-2')
 

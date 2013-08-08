@@ -1,0 +1,6 @@
+5x-1-1Correction Terms:
+[[-2 -1]
+ [-1 -4]]
+Quadratic Form:
+[[-2 -1]
+ [-1 -4]]

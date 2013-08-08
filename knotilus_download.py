@@ -1,12 +1,11 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
 # MENTOR: Professor Yi Ni
-# 08.01.13
+# 08.05.13
 
-import sys
+import sys, time
 import cStringIO
-import time
-import urllib2
+import urllib2, webbrowser
 import tkMessageBox
 
 '''
@@ -49,6 +48,15 @@ def get_page_source(url):
     print '[DONE]'
     page.close()
     return page_source
+
+def browser_link(archive):
+    '''
+    Opens a webbrowser or new tab to Knotilus page for the link with archive
+    number 'archive'.
+    '''
+    url = 'http://knotilus.math.uwo.ca/draw.php?archive=%s&javadraw=off'%archive
+    webbrowser.open(url)
+    
 
 def gauss_code(archive, gui=False):
     '''

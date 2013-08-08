@@ -25,13 +25,20 @@ class VertexClass():
         self.edges = []   # the 2 edges with this point as a vertex
         
     
-    def draw(self, canvas, col=None):
+    def draw(self, canvas, col=None, flip=False, height=560):
         '''
         Draw a circle around the point, fill color = 'col', on canvas 'canvas'.
+        
+        Useful for Knotilus:
+        'flip' boolean is used to reflect figure upside down.
+        'height' is only used to reflect the figure. 
         '''
-        return canvas.create_oval(self.x - 5, self.y - 5, \
-                                  self.x + 5, self.y + 5,\
-                                  fill=col)
+        if not flip:
+            return canvas.create_oval(self.x - 5, self.y - 5, \
+                                      self.x + 5, self.y + 5, fill=col)
+        else:
+            return canvas.create_oval(self.x - 5, height - self.y - 5, \
+                                      self.x + 5, height - self.y + 5, fill=col)
     
     def dist(self, other):
         '''Euclidean distance between 'self' and 'other'.'''
@@ -165,10 +172,20 @@ class EdgeClass():
                     - d*e*h),-b*e + d*e + a*f - c*f + b*g - d*g - a*h + c*h)
         return float(x), float(y)
     
-    def draw(self, canvas):
-        '''Draw edge in Tkinter, on canvas 'canvas'.'''
-        return canvas.create_line(self.point1.x, self.point1.y, \
-                                  self.point2.x, self.point2.y)
+    def draw(self, canvas, flip=False, height=560):
+        '''
+        Draw edge in Tkinter, on canvas 'canvas'.
+        
+        Useful for Knotilus:
+        'flip' boolean is used to reflect figure upside down.
+        'height' is only used to reflect the figure. 
+        '''
+        if not flip:
+            return canvas.create_line(self.point1.x, self.point1.y, \
+                                      self.point2.x, self.point2.y)
+        else:
+            return canvas.create_line(self.point1.x, height-self.point1.y,\
+                                      self.poitn2.x, height-self.point2.y)
 
 class RegionClass():
     def __init__(self, vert_list, total_angle):
@@ -207,14 +224,22 @@ class RegionClass():
                     num += 1
         return num
     
-    def draw(self, canvas, color='blue'):
+    def draw(self, canvas, color='blue', flip=False, height=560):
         '''
         Draw polygon in Tkiner, fill color 'color', on canvas 'canvas'.
         Note this isn't exactly useful if one of the regions is the exterior.
         (Then this method will just color in the whole drawing.)
+        
+        Useful for Knotilus:
+        'flip' boolean is used to reflect figure upside down.
+        'height' is only used to reflect the figure. 
         '''
         vertices = []
-        for ver in self.vertices:
-            vertices.extend([ver.x, ver.y])
+        if not flip:
+            for ver in self.vertices:
+                vertices.extend([ver.x, ver.y])
+        else:
+            for ver in self.vertices:
+                vertices.extend([ver.x, height-ver.y])
         vertices = tuple(vertices)
         return canvas.create_polygon(vertices, fill=color)

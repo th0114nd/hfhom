@@ -1,6 +1,5 @@
 # Caltech SURF 2013
 # FILE: seifert_tests.py
-# AUTHOR: Laura Shou
 # MENTOR: Professor Yi Ni
 # 07.10.13
 
