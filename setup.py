@@ -6,4 +6,5 @@ setup(
         packages=['CorrTerms',],
         license='GNU General Public License'
         long_description=open('README.md").read(),
+        scripts=['bin/hfhom']
 )
