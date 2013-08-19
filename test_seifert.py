@@ -1,7 +1,6 @@
 # Caltech SURF 2013
-# FILE: seifert_tests.py
-# MENTOR: Professor Yi Ni
-# 07.10.13
+# FILE: test_seifert.py
+# 08.12.13
 
 '''
 tests for seifert.py

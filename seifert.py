@@ -1,7 +1,6 @@
 # Caltech SURF 2013
 # FILE: seifert.py
-# MENTOR: Professor Yi Ni
-# 08.02.13
+# 08.13.13
 
 import numpy, sys
 from fractions import Fraction, gcd
@@ -34,11 +33,11 @@ def correct_form(listdata, gui=False):
                 
             if not gui:
                 print 'Warning: q%i = 0, ignoring the %i%s pair' \
-                      %(index, index, suffix)
+                      %(index+1, index+1, suffix)
             else: # gui
                 tkMessageBox.showwarning('Warning',\
                                          'Warning: q%i=0, ignoring the %i%s pair'\
-                                         %(index, index, suffix))
+                                         %(index+1, index+1, suffix))
         else:
             if len(pair) != 2 or type(pair[0]) != int or type(pair[1]) != int:
                 return False
@@ -190,7 +189,7 @@ def s_quad_form(listdata):
     There are r branches coming off of the center vertex.
     Each branch has the vertices [-a0, -a1, ... , -an], where a0,a1,...,an
     are the numbers in the continued fraction expansion of pi/qi, for each i.
-    (Note: the continued fraction expansion has negative signs; see function
+    (Note: the continued fraction expansion has minus signs; see function
     'cont_fraction'.)
     
     The quadratic form of the weighted graph is defined by

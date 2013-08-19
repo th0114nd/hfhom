@@ -1,7 +1,6 @@
 # Caltech SURF 2013
-# FILE: plink_classes_tests.py
-# MENTOR: Professor Yi Ni
-# 08.08.13
+# FILE: test_plink_classes.py
+# 08.12.13
 
 '''
 Tests for plink_classes.py

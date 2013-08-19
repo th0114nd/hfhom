@@ -255,7 +255,7 @@ def load(archive, filename=False, save=False, gui=False):
             try:
                 data = load_knotilus(archive)
                 return make_objects(data[0], data[1], data[2])
-            except IOError: # file doesn't exist
+            except IOError: # file doesn't exist (not a problem with GUI)
                 print "'%s'does not exist in the current directory." % archive
                 answer = raw_input('Download from Knotilus? [y/n] ')            
                 while 1: # do this until get a y/n
@@ -291,7 +291,7 @@ def load(archive, filename=False, save=False, gui=False):
     elif save == True:
         download_save(archive)
         print 'Successfully saved to %s.txt' % archive
-        load(archive + '.txt', True) # load file
+        return load(archive + '.txt', filename=True, save=False) # load file
     else: # don't save to file
         data = load_knotilus(get_plaintext(archive,gui), True) # True=>stringIO
         return make_objects(data[0], data[1], data[2])

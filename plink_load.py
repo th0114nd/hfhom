@@ -36,7 +36,11 @@ def is_alternating(link):
     Return 'True' if LinkEditor object 'link' is alternating, 'False' if not.
     '''
     original = link.SnapPea_projection_file()
-    link.make_alternating() # will error if not closed
+    try:
+        link.make_alternating() # will error if not closed
+    except IndexError:
+        return True # for some reason Plink has an IndexError on the unknot 
+                     # if there are no crossings in the projection FIXME
     if link.SnapPea_projection_file() == original:
         return True
     return False 

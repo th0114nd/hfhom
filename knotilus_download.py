@@ -1,7 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
-# MENTOR: Professor Yi Ni
-# 08.05.13
+# 08.12.13
 
 import sys, time
 import cStringIO
@@ -38,12 +37,20 @@ def valid_archive_form(archive):
         return False
     return True
 
-def get_page_source(url):
+def get_page_source(url, gui=False):
     '''
     Returns the page source (string) of url.
     '''
-    print 'Getting page source......',  
-    page = urllib2.urlopen(url)
+    print 'Getting page source......',
+    try:
+        page = urllib2.urlopen(url)
+    except urllib2.URLError:
+        if not gui:
+            print 'Cannot access %s. Check Internet connection.' %url
+        else:
+            tkMessageBox.showwarning('URLError', 'Cannot access %s.\n\n' %url +\
+                                     'Please check Internet connection.')
+        raise urllib2.URLError()
     page_source = page.read()
     print '[DONE]'
     page.close()
@@ -76,7 +83,7 @@ def gauss_code(archive, gui=False):
         raise KURLError('archive num must be of form ax-b-c, for a,b,c ints')
     
     url = 'http://knotilus.math.uwo.ca/draw.php?archive=%s&javadraw=off'%archive
-    page_source = get_page_source(url)
+    page_source = get_page_source(url, gui)
     source = cStringIO.StringIO(page_source) # treat string like a file
     valid = False # whether the url is valid or not
 
@@ -89,7 +96,7 @@ def gauss_code(archive, gui=False):
     if valid == False: # didn't find the Gauss code
         if gui:
             tkMessageBox.showwarning('Archive number', 'Not a valid archive number.'\
-                                   +'Aborting now.')
+                                   +' Aborting now.')
         raise KURLError('not a valid archive number')
     
     text = correct_line.split()
@@ -115,7 +122,7 @@ def get_plaintext(archive, gui=False, max_attempts=12):
     gauss = gauss_code(archive, gui)
     url= 'http://knotilus.math.uwo.ca/dl.php?r=0&m=0&a=0&i=0&ext=-1%s&type=txt'\
         % gauss
-    plaintext = get_page_source(url)
+    plaintext = get_page_source(url, gui)
     loaded = False
     
     start = time.time()
@@ -133,7 +140,7 @@ def get_plaintext(archive, gui=False, max_attempts=12):
                                   'Annealing...this may take up to 20 seconds,'\
                                   +' depending on network connections.')
         time.sleep(1.5) # 1.5 seconds seems around the best waiting time
-        plaintext = get_page_source(url)        
+        plaintext = get_page_source(url, gui)        
         page.close()
     if not loaded:
         if not gui:

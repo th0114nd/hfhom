@@ -1,14 +1,13 @@
 # Caltech SURF 2013
-# FILE: graph_quad_tests.py
-# MENTOR: Professor Yi Ni
-# 08.08.13
+# FILE: test_graph_quad.py
+# 08.012.13
 
 '''
 Tests for graph_quad.py
 '''
 
 from graph_quad import *
-import nose
+import nose, os
 from nose.tools import assert_raises
 
 err = 0.00001 # error tolerance
@@ -63,11 +62,14 @@ def knotilus_load_objects(archive):
     gNodes = [NodeClass(i) for i in range(len(gRegions))]
     return edges_regions(gNodes, gRegions), gNodes
 
-
-edge_list_p1, nodes_p1 = plink_load_objects('testing/t1_p_multiloop.txt')
-edge_list_p2, nodes_p2 = plink_load_objects('testing/t2_p_background.txt')
-edge_list_p3, nodes_p3 = plink_load_objects('testing/t3_p_multiloop_background.txt')
-edge_list_p4, nodes_p4 = plink_load_objects('testing/t4_p_normal.txt')
+path = os.path.abspath(os.path.dirname(sys.argv[0]))
+edge_list_p1, nodes_p1 = plink_load_objects('%s/testing/t1_p_multiloop.txt' \
+                                            %path)
+edge_list_p2, nodes_p2 = plink_load_objects('%s/testing/t2_p_background.txt' \
+                                            %path)
+edge_list_p3, nodes_p3 = plink_load_objects(\
+    '%s/testing/t3_p_multiloop_background.txt' %path)
+edge_list_p4, nodes_p4 = plink_load_objects('%s/testing/t4_p_normal.txt' %path)
 edge_list_k1, nodes_k1 = knotilus_load_objects('10x-2-1')
 edge_list_k2, nodes_k2 = knotilus_load_objects('7x-1-2')
 
