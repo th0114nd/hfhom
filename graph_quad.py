@@ -1,6 +1,5 @@
 # Caltech SURF 2013
 # FILE: graph_quad.py
-# MENTOR: Professor Yi Ni
 # 06.27.13
 
 '''

@@ -9,11 +9,11 @@ Main user interface for entering link data.
 # TODO weighted plumbing tree (graph-tool?)
 # TODO open files from File menu
 
-# TODO show weighted graph for Seifert data
+# TODO show weighted graph
+# TODO show modified Seifert data [e, ... ] (-Y)
 
-# main/start window dimensions
-windowx = 450
-windowy = 450
+# TODO unknot??? (double branched cover of unknot is 3-sphere)
+
 
 import traceback, os, sys
 import webbrowser
@@ -23,7 +23,7 @@ from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
 from seifert import s_quad_form, correct_form
 import networkx as nx
-from weighted_graph2 import GraphPopup
+from weighted_graph import GraphPopup
 from gui_output import OutputWindow
 
 def regions_to_quad(regions):
@@ -54,10 +54,12 @@ class StartWindow(Frame):
         show_shaded = IntVar()
         show_graph = IntVar()        
         show_quad = IntVar()        
-        self.condensed = IntVar()        
+        self.condensed = IntVar()  
+        show_weighted = IntVar()
+        show_seifert = IntVar()
         
         optmenu = Menu(self.menubar, tearoff=0)
-        optmenu.add_checkbutton(label='Show quadratic form', variable=show_quad)
+        optmenu.add_checkbutton(label='Print quadratic form', variable=show_quad)
         optmenu.add_checkbutton(label='Condense correction terms', \
                                 variable=self.condensed, \
                                 command=lambda: self.disable_quad_graph(optmenu, dbcmenu))
@@ -66,8 +68,11 @@ class StartWindow(Frame):
         dbcmenu.add_checkbutton(label='Show shaded link', variable=show_shaded)
         dbcmenu.add_checkbutton(label='Show graph commands', variable=show_graph)
         optmenu.add_cascade(label='Double branched cover', menu=dbcmenu)
+        manifoldmenu = Menu(optmenu, tearoff=0)
+        manifoldmenu.add_checkbutton(label='Print modified Seifert data', variable=show_seifert)
+        manifoldmenu.add_checkbutton(label='Show weighted graph', variable=show_weighted)
+        optmenu.add_cascade(label='Seifert data', menu=manifoldmenu)
         self.menubar.add_cascade(label='Options', menu=optmenu)
-        
         
 
         # Help
@@ -91,38 +96,16 @@ class StartWindow(Frame):
         bannerlabel.image = knotimage # keep reference (else garbage collected)
         bannerlabel.grid(row=1, sticky='w', columnspan=4)
         
-        # Subtitle
-        #Label(master, text='Actually just quadratic form...').pack(anchor='w')
-        
-
-        
-        
         # useful stuff
-        # font for Knotilus, PLink, Seifert headers
-        section_font = tkFont.Font(size=9)
+        section_font = tkFont.Font(size=9) # font for headers
         note = ttk.Notebook(master)
-        # http://www.pyinmyeye.com/2012/08/tkinter-notebook-demo.html
-        # extend bindings to top level window allowing
-        #   CTRL+TAB - cycles thru tabs
-        #   SHIFT+CTRL+TAB - previous tab
-        #   ALT+K - select tab using mnemonic (K = underlined letter)
-        note.enable_traversal()        
+        note.enable_traversal() # ctrl+tab cycle forward, shift+ctrl+tab back
         
         # Double branched cover of an alternating link tab
         double_cover = Frame(note)
         description1 = '\nCorrection terms for the double branched cover of an' +\
             ' alternating link.\nInput is an alternating link.'
         Label(double_cover, text=description1, justify=LEFT).grid(row=0, column=0, sticky='w', columnspan=4)
-        '''
-        Label(double_cover, text='Options - Show:').grid(row=1, column=0, sticky='w')
-        Checkbutton(double_cover, text='original link', variable=show_link).grid(\
-            row=1, column=1, sticky='w')
-        Checkbutton(double_cover, text='shaded link', variable=show_shaded).grid(\
-            row=1, column=2, sticky='w')
-        g = Checkbutton(double_cover, text='graph commands', variable=show_graph)        
-        g.grid(row=1, column=3, sticky='w')
-        '''
-        
         knotilus = KnotilusBox(double_cover, section_font, self.condensed, show_quad,\
                                show_link, show_shaded, show_graph)
         plink = PLinkBox(double_cover, section_font, self.condensed, show_quad, \
@@ -136,33 +119,13 @@ class StartWindow(Frame):
         Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0, sticky='w', columnspan=4)        
         seifert = SeifertBox(plumbing, section_font, self.condensed, show_quad)
         graph = WeightedGraphBox(plumbing, section_font, self.condensed, show_quad)
-        note.add(plumbing, text='Plumbed 3-manifolds')        
-        
-        # Global check buttons
-        '''
-        Label(master, text='Global Options:').grid(row=2,sticky='w', pady=10)        
-        q = Checkbutton(master, text='show quadratic form', variable=show_quad)
-        q.grid(row=2, column=1, sticky='w')        
-        Checkbutton(master, text='condense correction terms', \
-                    variable=self.condensed, \
-                    command=lambda: self.disable_checkboxes([q,g])).grid(\
-                        row=2, column=2, sticky='w', columnspan=2)
-        '''
-        
+        note.add(plumbing, text='Plumbed 3-manifolds')
         note.grid(sticky='w', column=0, columnspan=4, pady=5)
-        
-        
+
         # Banner image again        
         bannerlabel2 = Label(image=knotimage)
         bannerlabel2.image = knotimage # keep reference (else garbage collected)
         bannerlabel2.grid(sticky='w', columnspan=4)  
-        
-        #canvas = Canvas(frame, bg="black", width=500, height=500)
-        #canvas.pack()        
-        #canvas.create_image(150, 150, image=knotimage)
-        #canvas.pack()
-            
-        #frame.pack()
     
     def disable_quad_graph(self, menu1, menu2):
         '''Disable options for showing quadratic form and graph commands.'''
@@ -560,7 +523,7 @@ class AboutWindow(object):
 
 def main():
     root = Tk()
-    root.geometry(str(windowx) + 'x' + str(windowy))
+    root.geometry('450x450')
     
     app = StartWindow(root)
     
