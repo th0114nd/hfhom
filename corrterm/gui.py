@@ -83,7 +83,7 @@ class StartWindow(Frame):
               font=tkFont.Font(size=12)).grid(row=0, sticky='w', columnspan=4)
         
         # Banner image
-        self.path = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.path = os.path.abspath(os.path.dirname(__file__))
         image = Image.open('%s/images/banner_small.png' % self.path)
         knotimage = ImageTk.PhotoImage(image)
         
@@ -362,7 +362,7 @@ class PLinkBox(object):
         # open file options
         options = {}
         options['defaultextension'] = '.txt'
-        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        options['filetypes'] = [('link files', '.lnk'), ('all files', '.*'), ('text files', '.txt')]
         filename = tkFileDialog.askopenfilename(**options)
         # TODO load(filename) - must also determine PLink vs. Knotilus
         if filename == '': # no file selected (canceled)

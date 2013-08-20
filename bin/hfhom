@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import corrterm.gui
+
+corrterm.gui.main()
