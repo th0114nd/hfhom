@@ -9,8 +9,21 @@ A package to compute Heergaard Floer correction terms for some classes of manifo
 
 Installation
 ------------
-You will need to first install `matplotlib`, with instructions available [here]
-(matplotlib.org/users/installing.html).
+Installation the easy way requires `pip` first, with instructions 
+[here](www.pip-installer.org/en/latest/installing.html). If you do not
+have an installation of `plink` installed that python can find, run
+
+`pip install -f http://math.uic.edu/t3m/plink plink`
+
+before trying to install `hfhom`. To install this program, run
+
+`pip install git+git://github.com/th0114nd/hfhom.git`
+
+To test the installation, run
+
+`hfhom`
+
+For a successful installation, the program should start running.
 
 Using the GUI
 -----
@@ -24,7 +37,7 @@ Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered
 rational homology sphere or a negative definite weighted graph with at most
 two bad vertices.
 
-![](images/gui.png)
+![](corrterm/images/gui.png)
 
 From the inputted data, a negative definite quadratic form is computed,
 and then the Heegaard Floer correction terms are computed from the quadratic
