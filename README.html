@@ -1,23 +1,16 @@
 <h1 id="hfhom">hfhom</h1>
-<p><!---
+<!---
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
---> A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.</p>
-<h2 id="alink">alink</h2>
-<p>Used to compute the terms for a double branched cover of an alternating link, with input supplied in a .lnk file. A .lnk file can be acquired using the SnapPea application, by issuing the command 'Manifold()' to the SnapPea command line. This opens a link editor, and use <code>PLink-&gt;Make Alternating</code> to ensure an alternating link. <code>File-&gt;Save As</code> will create a .lnk file at a location of your choosing. To compute the terms at the level of the operating system's shell, on a UNIX system run</p>
-<pre><code>$ ./alink YOUR_LINK_FILE.lnk</code></pre>
-<p>which will return a plaintext list of correction terms. To redirect the list into a file called <code>out.txt</code>, issue</p>
-<pre><code>$ ./alink YOUR_LINK.lnk &gt; out.txt</code></pre>
-<p>To use the correction terms inside a Python program, import hfhom.alink</p>
-<pre><code>...
-&gt;&gt;&gt; with open(&#39;YOUR_KNOT_FILE.lnk&#39;) as link:
-&gt;&gt;&gt;     corr_terms = hfhom.alink.ct_from_link(link) 
-&gt;&gt;&gt; print corr_terms</code></pre>
+-->
+<p>A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.</p>
+<h2 id="installation">Installation</h2>
+<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run pip install -f http://math.uic.edu/t3m/plink plink before trying to install <code>hfhom</code>. To install this program, run pip install git+git://github.com/th0114nd/hfhom.git To test the installation, run hfhom For a successful installation, the program should start running.</p>
 <h2 id="using-the-gui">Using the GUI</h2>
 <p>The GUI has two tabs, one for computing the corrections terms of the double branched cover of an alternating link, and one for computing the correction terms of a plumbed 3-manifold. Input for the double branched cover of an alternating link is an alternating link from either <a href="http://knotilus.math.uwo.ca/">Knotilus</a> or <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink</a>. Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered rational homology sphere or a negative definite weighted graph with at most two bad vertices.</p>
 <div class="figure">
-<img src="images/gui.png" /><p class="caption"></p>
+<img src="corrterm/images/gui.png" />
 </div>
 <p>From the inputted data, a negative definite quadratic form is computed, and then the Heegaard Floer correction terms are computed from the quadratic form.</p>
 <h3 id="knotilus-archive">Knotilus archive</h3>
@@ -34,19 +27,10 @@ $ pandoc -f markdown -t html README.md -o README.html
 </ul>
 <h3 id="seifert-data">Seifert data</h3>
 <p>Data for a Seifert fibered rational homology sphere is represented as a list <code>[e,(p1,q1),...,(pr,qr)]</code>, where e and all the pi, qi are integers, and all pi &gt; 1 with gcd(pi, qi) = 1.</p>
-<h3 id="graph">Graph</h3>
+<h3 id="weighted-graph-editor">Weighted graph editor</h3>
 <h3 id="options">Options</h3>
 <p>Under the <code>Options</code> menu, there are two global options, <code>Show quadratic form</code> and <code>Condense correction terms</code>. Additionally, there is the submenu <code>Double branched cover</code>, which has the options <code>Show original link</code>, <code>Show shaded link</code>, and <code>Show graph commands</code>. These last three options only affect the input methods on the <code>Double branched cover</code> tab (Knotilus and PLink/SnapPy).</p>
 <ul>
 <li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code> and <code>graph commands</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line.</p></li>
 <li><p><strong>Double branched cover submenu</strong><br />If the <code>original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. If opening a saved Knotilus file, this will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
 </ul>
-<h2 id="smith">smith</h2>
-<p>The Smith module computes the Smith Normal Form of a numpy matrix, as well as the unimodular accompanying factors. The algorithm is an implementation of that of <a href="http://itee.uq.edu.au/~havas/1997hm.pdf">Havas and Majewski</a>. Plans are made to extend the package to more classes of Manifolds at present.</p>
-<p>Usage:</p>
-<pre><code>&gt;&gt;&gt; x = np.matrix([[-5, -2], [-2, -4]])
-&gt;&gt;&gt; d, (u, v) = smith_normal_form(x)
-&gt;&gt;&gt; assert u * d * v = x
-&gt;&gt;&gt; print d
-[[1 0
-  0 16]]</code></pre>
