@@ -6,7 +6,13 @@ $ pandoc -f markdown -t html README.md -o README.html
 -->
 <p>A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.</p>
 <h2 id="installation">Installation</h2>
-<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run pip install -f http://math.uic.edu/t3m/plink plink before trying to install <code>hfhom</code>. To install this program, run pip install git+git://github.com/th0114nd/hfhom.git To test the installation, run hfhom For a successful installation, the program should start running.</p>
+<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
+<p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
+<p>before trying to install <code>hfhom</code>. To install this program, run</p>
+<p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code></p>
+<p>To test the installation, run</p>
+<p><code>hfhom</code></p>
+<p>For a successful installation, the program should start running.</p>
 <h2 id="using-the-gui">Using the GUI</h2>
 <p>The GUI has two tabs, one for computing the corrections terms of the double branched cover of an alternating link, and one for computing the correction terms of a plumbed 3-manifold. Input for the double branched cover of an alternating link is an alternating link from either <a href="http://knotilus.math.uwo.ca/">Knotilus</a> or <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink</a>. Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered rational homology sphere or a negative definite weighted graph with at most two bad vertices.</p>
 <div class="figure">

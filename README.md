@@ -17,7 +17,7 @@ have an installation of `plink` installed that python can find, run
 
 before trying to install `hfhom`. To install this program, run
 
-`pip install git+git://github.com/th0114nd/hfhom.git`
+`[sudo] pip install git+git://github.com/th0114nd/hfhom.git`
 
 To test the installation, run
 
