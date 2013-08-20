@@ -1,19 +1,22 @@
 # Caltech SURF 2013
 # FILE: gui_output.py
-# 08.18.13
+# 08.19.13
 
 from Tkinter import *
 import tkFileDialog
 
 class OutputWindow(object):
     '''Print output'''
-    def __init__(self, master, corr_terms, quad, inputinfo, condense=False, \
-                 showquad=False, showgraph=False, regions=[]):
+    def __init__(self, master, corr_terms, quad, inputinfo, condense=False,
+                 showquad=False, showgraph=False, regions=[], showseifert=False,
+                 seifertdata=None):
         self.master = master
         self.top = Toplevel(master)
         self.top.title('Output')
         self.corr = corr_terms
         self.quad = quad
+        self.seifert = seifertdata # seifert data; output of alter_data
+                                   # tuple (listdata, True/false)
         self.inputinfo = inputinfo # string, eg. knotilus archive num
         self.showquad = showquad # boolean or 1,0 to print quadratic form also
         
@@ -37,6 +40,9 @@ class OutputWindow(object):
                 m = maximal_subtree(t, Nodes)            
                 self.output.insert(INSERT, '\nGraph Commands:\n%s\n%s\n' \
                                    % (graph_plot(t), graph_plot(m)))
+            if showseifert:
+                self.output.insert(INSERT, 
+                    '\nAltered Seifert data:%s, reversed = %s\n' %seifertdata)
         #self.output.configure(state=DISABLED) # read only
         self.output.grid(row=1, column=0, columnspan=3)
         
@@ -56,13 +62,8 @@ class OutputWindow(object):
         if filename:
             corr_file = open(filename, 'w')
             corr_file.write(self.output.get(1.0, END))
-            '''
-            corr_file.write(self.inputinfo)
-            corr_file.write('\n\nCorrection Terms:\n%s\n\n' % self.corr)
-            if self.show_quad:
-                corr_file.write('Quadratic Form:\n%s\n' % self.quad)
-            '''
             corr_file.close()
+            print 'Saved to %s' % filename
     
     def copy(self):
         '''Copy correction terms to clipboard.'''
@@ -71,3 +72,4 @@ class OutputWindow(object):
         r.clipboard_clear()
         r.clipboard_append(self.output.get(1.0, END))
         r.destroy()
+        print 'Copied to clipboard'

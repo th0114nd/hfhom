@@ -5,7 +5,8 @@ Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
 -->
-A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.
+A package to compute Heergaard Floer correction terms for some classes of 
+manifolds, as a SURF 2013 project.
 
 alink
 -----
@@ -13,9 +14,9 @@ Used to compute the terms for a double branched cover of an alternating link,
 with input supplied in a .lnk file.  A .lnk file can be acquired using the
 SnapPea application, by issuing the command 'Manifold()' to the SnapPea command
 line.  This opens a link editor, and use ```PLink->Make Alternating``` to
-ensure an alternating link. ```File->Save As``` will create a .lnk file at a location
-of your choosing. To compute the terms at the level of the operating system's
-shell, on a UNIX system run 
+ensure an alternating link. ```File->Save As``` will create a .lnk file at a 
+location of your choosing. To compute the terms at the level of the operating 
+system's shell, on a UNIX system run 
 
     $ ./alink YOUR_LINK_FILE.lnk
 
@@ -68,7 +69,8 @@ See [here](http://knotilus.math.uwo.ca/doc/archive.html) for more details
 about the Knotilus archive number.
 
 * __Loading a downloaded Knotilus file__  
-A valid Knotilus file is created by going to [Knotilus](http://knotilus.math.uwo.ca/), finding the desired link, then selecting
+A valid Knotilus file is created by going to [Knotilus]
+(http://knotilus.math.uwo.ca/), finding the desired link, then selecting
 `Download > Plaintext` and saving the file. 
 The program will run noticeably faster on a downloaded Knotilus file
 than if it must fetch the file from the database. The option `original link`
@@ -78,7 +80,8 @@ It will be ignored otherwise.
 ### PLink/SnapPy ###
 The PLink/SnapPy section has two input methods, either by drawing a new link
 using the PLink Editor or opening a saved PLink file. Instruction for using
-PLink can be found in the documentation for SnapPy, [here](http://www.math.uic.edu/t3m/SnapPy/plink.html).
+PLink can be found in the documentation for SnapPy, 
+[here](http://www.math.uic.edu/t3m/SnapPy/plink.html).
 
 * __Drawing a new link__  
 Clicking the `Create New` button will open the PLink editor. Draw the link 
@@ -102,15 +105,41 @@ Data for a Seifert fibered rational homology sphere is represented as a list
 pi > 1 with gcd(pi, qi) = 1.
 
 ### Weighted graph editor ###
+Opening the editor will produce a "Graph controls" dialog.
 
+![](images/graph_controls.png)
+
+* __Creating a node__  
+A parent of -1 indicates that the node is a root node, i.e. has no parent.
+To create a node, select its desired parent node, enter the node's weight
+(integer), then click create. The graph will be draw using 
+[matplotlib.pyplot](http://matplotlib.org/api/pyplot_api.html). Nodes are 
+labeled `Nk,w`, where k is the node's number and w is its weight. For example,
+if the first node had weight -3, it would be labeled `N0,-3`.
+* __Editing a node__  
+To edit a node, select the node's number. The node's parent and weight will be
+edited at the same time. Enter the desired new data, then click `Done`. 
+To leave the parent unchanged, select `same` from the dropdown menu.
+To leave the weight unchanged, leave the entry field empty.
+* __Saving/loading/exiting__  
+Click the `Save` button to save the graph data in a plaintext file. The file
+will contain the adjacency list of the graph, followed by a list of the node
+attributes.  
+Click the `Load` button to load graph data from a plaintext file. The file
+must be in the same format used by `Save`. Loading a file will remove the 
+current graph drawn in matplotlib.pyplot. After loading a file, nodes may be
+created or edited.  
+Click the `Done/compute` button to close the editor and compute the correction
+terms. Click the `Cancel` button to close the editor without computing 
+anything.
 
 ### Options ###
 Under the `Options` menu, there are two global options, `Show quadratic form`
-and `Condense correction terms`. Additionally, there is the submenu
-`Double branched cover`, which has the options `Show original link`,
-`Show shaded link`, and `Show graph commands`. These last three options only
-affect the input methods on the `Double branched cover` tab (Knotilus and 
-PLink/SnapPy).
+and `Condense correction terms`. Additionally, there are the submenus
+`Double branched cover` and `Plumbed 3-manifolds`, which only affect those
+input methods, respectively. If an option starts with "Print", it will
+print additional information in the correction terms window. If an option
+starts with "Show", it will open a new window.
 
 * __Global Options__  
 If the `quadratic form` option is checked, the quadratic form
@@ -118,15 +147,24 @@ If the `quadratic form` option is checked, the quadratic form
 output window. Checking the `condense correction terms` box will disable the
 `quadratic form` and `graph commands` options, and the output window will just
 contain the Knotilus archive number or filename, followed by a space and the
-correction terms, all on a single line.
+correction terms, all on a single line. For Seifert data, if the manifold
+orientation is reversed, the quadratic form will be for the altered (reversed)
+manifold, rather than the original.
 
 * __Double branched cover submenu__  
-If the `original link` option is checked, a separate window will open to show
-the original link diagram. For Knotilus, this will open an Internet browser tab
-to the appropriate link. If opening a saved Knotilus file, this will only
-succeed if the filename is of the form `ax-b-c.txt` or `ax-b-c`, where 'ax-b-c'
-is the archive number. For PLink or SnapPy, the PLink editor will open with the
-original link drawing. The PLink file must be saved in order to do this.
+If the `Show original link` option is checked, a separate window will open to 
+show the original link diagram. For Knotilus, this will open an Internet 
+browser tab to the appropriate link. If opening a saved Knotilus file, this 
+will only succeed if the filename is of the form `ax-b-c.txt` or `ax-b-c`, 
+where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor 
+will open with the original link drawing. The PLink file must be saved in 
+order to do this.
+
+* __Plumbed 3-manifold submenu__  
+If the `Show weighted graph` option is checked, the graph will be drawn in a
+separate window using 
+[matplotlib.pyplot](http://matplotlib.org/api/pyplot_api.html). The option 
+`Print modified Seifert data` only affects Seifert data input.
 
 smith
 -----

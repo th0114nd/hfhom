@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: graph_quad.py
-# 06.27.13
+# 08.20.13
 
 '''
 Graph and quadratic form methods
@@ -32,6 +32,7 @@ OR     python graph_quad.py -p [filename]
 #                      instances
 
 import numpy, sys, tkFileDialog
+from numpy import linalg as LA
 from plink_classes import IntersectionClass
 from plink_load import load_plink, make_objects
 from knotilus_load import load
@@ -221,6 +222,7 @@ def quad_form(tree, minus_edge_list, Nodes):
             row += 1
             column = row # start at main diagonal
     symmetric(quad) # fill in the 'bottom triangular' part
+    assert is_negative_definite(quad)
     return quad
 
 def symmetric(array):
@@ -228,16 +230,28 @@ def symmetric(array):
     Takes an upper triangular square numpy array, and copies the upper 
     triangular part over to the lower left part to make a symmetric matrix.
     
-    No output, but changes array. Raises AssertionError if array is not upper
+    No output, but changes array. Raises ValueError if array is not upper
     triangular.
     '''
     size = array.shape[0]
-    assert size == array.shape[1], 'not a square matrix'
+    if size != array.shape[1]:
+        raise ValueError('not a square matrix')
     for row in range(size):
         for column in range(size):
             if row > column: # lower triangle
                 assert array[row][column] == 0
                 array[row][column] = array[column][row]
+
+def is_negative_definite(quad):
+    '''
+    Return True if square matrix/array 'quad' is negative definite
+    (all eigenvalues negative), False otherwise.
+    '''
+    eigenvalues = LA.eigvalsh(quad)
+    for eigen in eigenvalues:
+        if eigen >= 0:
+            return False
+    return True    
 
 def circuit(tree, edge, Nodes):
     '''

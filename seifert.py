@@ -1,14 +1,15 @@
 # Caltech SURF 2013
 # FILE: seifert.py
-# 08.13.13
+# 08.20.13
 
 import numpy, sys
 from fractions import Fraction, gcd
 from graph_quad import symmetric
 import tkMessageBox
+import networkx as nx
+import matplotlib.pyplot as plt
+from weighted_graph import g_quad
 
-class SeifertInputError(Exception):
-    pass
 
 def correct_form(listdata, gui=False):
     '''
@@ -36,8 +37,8 @@ def correct_form(listdata, gui=False):
                       %(index+1, index+1, suffix)
             else: # gui
                 tkMessageBox.showwarning('Warning',\
-                                         'Warning: q%i=0, ignoring the %i%s pair'\
-                                         %(index+1, index+1, suffix))
+                                    'Warning: q%i=0, ignoring the %i%s pair'\
+                                    %(index+1, index+1, suffix))
         else:
             if len(pair) != 2 or type(pair[0]) != int or type(pair[1]) != int:
                 return False
@@ -220,31 +221,57 @@ def s_quad_form(listdata):
             quad[index,index+1] = 1 # adjacent
         cur_position += length
     symmetric(quad)
+    # check get the same thing from weighted_graph.py
+    assert numpy.array_equal(quad, g_quad(make_graph(new_data), 
+                                          ['N%i' %num for num in range(size)]))
     return quad, minus
-                
+
+def make_graph(listdata):
+    '''
+    Return weighted graph (star tree) as a networkx graph.
+    
+    Weighted graph is after altering listdata.
+    '''
+    data = alter_data(listdata)[0]
+    startree = nx.Graph()
+    startree.add_node('N0', weight=-data[0]) # add root node, weight -e
+    node_num = 1
+    for pair in data[1:]:
+        branch = cont_fraction(pair[0], -pair[1])
+        for index in range(len(branch)):
+            startree.add_node('N%i'% node_num, weight=-branch[index])
+            if index == 0: # connect to root node
+                startree.add_edge('N0', 'N%i'%node_num)
+            else: # connect to the one right before it
+                startree.add_edge('N%i'%node_num, 'N%i' %(node_num -1))
+            node_num += 1
+    return startree
+    
+def s_draw(listdata):
+    '''Draw the weighted graph associated with the Seifert data 'listdata'.'''
+    startree = make_graph(listdata)
+    labels = dict((n, '%s,%s' %(n,a['weight'])) for n,a in 
+                  startree.nodes(data=True))
+    nx.draw(startree,labels=labels,node_size=1000)
+    plt.show()    
+               
 def usage():
-    print 'usage: python %s e p1 q1 ... pr qr' % sys.argv[0]
+    print "usage: python %s '[e,(p1,q1),...(pr,qr)]'" % sys.argv[0]
     sys.exit(1)
 
 if __name__ == '__main__':
-    # This is obsolete...
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         usage()
-    stringdata = sys.argv[1:]
-    if len(stringdata) % 2 != 1:
-        raise SeifertInputError, \
-              "wrong parity of arguments - must pair p's with q's"
-    listdata = [int(stringdata[0])]
-    index = 1
-    while 1:
-        if index >= len(stringdata):
-            break
-        listdata.append((int(stringdata[index]), int(stringdata[index+1])))
-        index += 2
-    print 'Inputted data:',
-    print listdata
-    if not correct_form(listdata):
-        raise SeifertInputError, \
-        '''data must be of the form 
-        [e, (p1, q1), (p2, q2), ... , (pr, qr)] with gcd(pi,qi) = 1 and pi > 1'''    
-    print s_quad_form(listdata)
+    # parse data
+    stringdata = sys.argv[1]
+    stringdata.replace(' ','') # remove all spaces
+    data = []
+    stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
+    stringdata = stringdata.split(',(')
+    data.append(int(stringdata[0])) # append e
+    for pair in stringdata[1:]:
+        pairlist = pair.split(',')
+        pairlist[0] = int(pairlist[0])
+        pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
+        data.append(tuple(pairlist))
+    print s_quad_form(data)

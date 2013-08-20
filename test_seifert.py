@@ -18,7 +18,7 @@ def test_invariants():
            ([Fraction(1,2),Fraction(1,2),Fraction(1,3)],Fraction(-8,3))
 
 def test_alter_data():
-    pass
+    pass # tested by assertion statement with invariants
 
 def test_cont_fraction():
     for test in range(100): # run 100 tests
