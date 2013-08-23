@@ -1,7 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_load.py
-# MENTOR: Professor Yi Ni
-# 08.02.13
+# 08.22.13
 
 '''
 This module has functions to load Knotilus data and make objects (Vertices, 
@@ -127,7 +126,7 @@ def load_knotilus(filename, string=False, gui=False):
                 
                 # check alternating link
                 if abs(prev_inter_third) == 1 and third_coord != -prev_inter_third:
-                    raise pl.DrawingError('link is not alternating')
+                    raise ValueError('link is not alternating')
                 prev_inter_third = third_coord         
                 
                 # check if we've already passed this intersection

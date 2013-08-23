@@ -11,14 +11,14 @@ Main user interface for entering link data.
 # TODO unknot??? (double branched cover of unknot is 3-sphere)
 # correction term is just 0 (only 1 spin structure)
 
-import traceback, os, sys
-import webbrowser
+import traceback, os, sys, webbrowser
+import plink
+import networkx as nx
 from Tkinter import *
-import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, plink, ttk
+import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, ttk, tkHyperlinkManager
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
 from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph
-import networkx as nx
 from weighted_graph import GraphPopup
 from gui_output import OutputWindow
 
@@ -211,8 +211,8 @@ class KnotilusBox(object):
             regions = data[3]
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
-                                     'Loading failed - %s%s'%(type(error),\
-                                                              self.filename))
+                                     'Loading failed (%s)\n%s'
+                                     %(self.filename, traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
         
@@ -284,9 +284,16 @@ class PLinkBox(object):
         
     def new_plink(self):
         '''Draw new link in PLink'''
-        data = load_plink(gui=True)
+        try:
+            data = load_plink(gui=True)
+        except Exception as error:
+            tkMessageBox.showwarning('Loading', \
+                                     'Loading failed (%s)\n%s' \
+                                     % (filename, traceback.format_exc().splitlines()[-1]))
+            print traceback.print_exc()
+            return            
         object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
-                               data[5])
+                                       data[5])
         regions = object_data[3]
         quad = regions_to_quad(regions)
         
@@ -318,8 +325,8 @@ class PLinkBox(object):
             regions = object_data[3]
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
-                                     'Loading failed - %s%s' \
-                                     % (type(error), filename))
+                                     'Loading failed (%s)\n%s' \
+                                     % (filename, traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
 
@@ -500,14 +507,32 @@ class AboutWindow(object):
         self.top = Toplevel(master)
         self.top.title('About')
         
-        about_text = \
+        about_text1 = \
             '''
-            Hfhom Version 1.0 FIXME date
+            Hfhom Version 1.0
             
-            Hfhom was written for a Caltech SURF project in summer 2013.
+            Hfhom was written for a Caltech SURF project in 
+            summer 2013. The project is available on GitHub, at
             '''
-        Message(self.top, text=about_text, width=1500, anchor='w').pack()
+        about_text2 = \
+            '''
+            
+            This project is licensed under the 
+            GNU General Public License;
+            see LICENSE.txt for more information.
+            '''
+        text = Text(self.top, width=65)
+        hyperlink = tkHyperlinkManager.HyperlinkManager(text)
+        text.insert(INSERT, about_text1)
+        text.insert(INSERT, 'https://github.com/th0114nd/hfhom', hyperlink.add(self.project_link))
+        text.insert(INSERT, about_text2)
+        text.configure(state=DISABLED) # read only
+        text.pack()
+        #Message(self.top, text=about_text, width=1500, anchor='w').pack()
         Button(self.top, text='Close', command=self.top.destroy).pack()
+    
+    def project_link(self):
+        webbrowser.open('https://github.com/th0114nd/hfhom')
 
 def main():
     root = Tk()

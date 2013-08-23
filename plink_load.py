@@ -1,7 +1,6 @@
 # Caltech SURF 2013
 # FILE: plink_load.py
-# MENTOR: Professor Yi Ni
-# 08.01.13
+# 08.22.13
 
 '''
 This module has functions to load Plink data and make objects (Vertices,
@@ -354,6 +353,9 @@ def load_plink(filename='', gui=False):
     
     If no input is specified, filename defaults to '', and the Plink editor
     opens so the user can draw a link. You MUST save this file.
+    
+    If gui=True, options will be shown in popup windows. Errors will NOT be 
+    printed in a popup window. You should catch them in another program instead.
     '''
     if filename == '':
         string = True
@@ -409,21 +411,24 @@ def load_plink(filename='', gui=False):
         
         # check closed and alternating
         if not is_closed(editor):
-            raise DrawingError('Not all links are closed!')
+            raise ValueError('Not all links are closed!')
         if not is_alternating(editor):
             editor.window.withdraw()
             if not gui: # command line -> print
                 print 'Link is not alternating.'
-                print 'Press [Enter] to make link alternating (will modify txt file),',
+                print 'Press [Enter] to make link alternating' + \
+                      '(will modify txt file),',
                 change = raw_input('Enter q to quit. ')
                 if change == '':
                     print 'Modifying file to make link alternating...'
                 elif change == 'q':
                     raise ValueError('Link is not alternating.')
             else: # gui -> popup windows
-                make_alternating = tkMessageBox.askokcancel('Warning', 'Link is not alternating. Select OK to make link alternating (will modify txt file). Select Cancel to abort.')
+                make_alternating = tkMessageBox.askokcancel('Warning', 
+                    'Link is not alternating. Select OK to make link ' + \
+                    'alternating (will modify txt file). ' + \
+                    'Select Cancel to abort.')
                 if not make_alternating:
-                    #tkMessageBox.showerror('Error','Link is not alternating. Aborting attempt.')
                     raise ValueError('Link is not alternating.')
             editor.make_alternating()
             # overwrite file
@@ -435,13 +440,9 @@ def load_plink(filename='', gui=False):
         try:
             knot = open(filename, 'r')
         except:
-            if not gui:
-                print 'Cannot open file %s' % filename
-                print 'Aborting operation; please try again'
-                raise IOError('failed to open file')
-            else: # gui -> messagebox
-                tkMessageBox.showwarning('Open file','Cannot open file %s. Aborting operation; please try again.' % filename)
-                raise IOError('failed to open file')
+            print 'Cannot open file %s' % filename
+            print 'Aborting operation; please try again'
+            raise IOError('failed to open file %s' % filename)
             
     else: # check = False, loading string not file
         knot = StringIO.StringIO(file_string)
@@ -474,14 +475,8 @@ def load_plink(filename='', gui=False):
         
         assert knot.readline().split()[0] == '-1'
     except:
-        if not gui: # command line
-            raise ValueError('failed to parse file. perhaps a bad file?')
-        else: # gui
-            tkMessageBox.showerror('Parsing file', 'Failed to parse file. Perhaps a bad file?')
-            raise ValueError('failed to parse file.')
-    
+        raise ValueError('failed to parse file. perhaps a bad file?')
     knot.close()
-
     return (vertices, edges, inter, num_vert, num_edges, num_inter, filename)
 
 def usage():

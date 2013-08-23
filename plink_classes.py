@@ -1,7 +1,6 @@
 # SURF 2013
 # FILE: plink_classes.py
-# MENTOR: Professor Yi Ni
-# 08.01.13
+# 08.22.13
 
 
 '''
