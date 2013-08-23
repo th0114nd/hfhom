@@ -245,10 +245,8 @@ def load(archive, filename=False, save=False, gui=False):
     Loads data and returns tuple (Vertices, Intersections, Edges, Regions), 
     of all objects from the data.
     
-    FIXME: docstring
-
-    If 'filename=True' but 'archive' does not exist, prompts to download from 
-    Knotilus. 
+    If 'filename=True' but file 'archive' does not exist, prompts to download 
+    from Knotilus. If downloading and 'save=True', will save to file. 
     '''
     if filename == True:
         while 1:

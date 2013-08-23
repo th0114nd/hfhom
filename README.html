@@ -1,9 +1,22 @@
-<h1 id="hfhom">hfhom</h1>
+<h1 id="hfhomcorrterms">hfhom/corrterms</h1>
 <p><!---
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
---> A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.</p>
+--> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
+<p>Specifically, the package computes the correction terms for the following:</p>
+<ul>
+<li>Double branched cover of an alternating link (input is an alternating link)
+<ul>
+<li>Input type 1: <a href="http://knotilus.math.uwo.ca/">Knotilus database</a></li>
+<li>Input type 2: <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink drawing</a></li>
+</ul></li>
+<li>Plumbed 3-manifold constructed from a negative-definite weighted graph with with at most two bad vertices
+<ul>
+<li>Input type 1: Seifert fibered rational homology sphere data {e; (p1, q1),...,(pr, qr)}</li>
+<li>Input type 2: Negative-definite graph with an most two bad vertices</li>
+</ul></li>
+</ul>
 <h2 id="alink">alink</h2>
 <p>Used to compute the terms for a double branched cover of an alternating link, with input supplied in a .lnk file. A .lnk file can be acquired using the SnapPea application, by issuing the command 'Manifold()' to the SnapPea command line. This opens a link editor, and use <code>PLink-&gt;Make Alternating</code> to ensure an alternating link. <code>File-&gt;Save As</code> will create a .lnk file at a location of your choosing. To compute the terms at the level of the operating system's shell, on a UNIX system run</p>
 <pre><code>$ ./alink YOUR_LINK_FILE.lnk</code></pre>
@@ -33,22 +46,34 @@ $ pandoc -f markdown -t html README.md -o README.html
 <li><p><strong>Loading a saved PLink file</strong><br />A valid PLink file is created by drawing a link in the PLink editor, then using the menu option <code>File &gt; Save ...</code>. Clicking the <code>Open</code> button will load the open file dialog to select a valid PLink file.</p></li>
 </ul>
 <h3 id="seifert-data">Seifert data</h3>
-<p>Data for a Seifert fibered rational homology sphere is represented as a list <code>[e,(p1,q1),...,(pr,qr)]</code>, where e and all the pi, qi are integers, and all pi &gt; 1 with gcd(pi, qi) = 1.</p>
+<p>Data for a Seifert fibered rational homology sphere is represented as a list <code>[e,(p1,q1),...,(pr,qr)]</code>, where e and all the pi, qi are integers, and all pi &gt; 1 with gcd(pi, qi) = 1. If the resulting quadratic form is not negative definite, an error message will pop up.</p>
 <h3 id="weighted-graph-editor">Weighted graph editor</h3>
+<p>This input method is for plumbed 3-manifolds constructed from a negative- definite weighted graph with at most 2 bad vertices.</p>
 <p>Opening the editor will produce a &quot;Graph controls&quot; dialog.</p>
 <div class="figure">
 <img src="images/graph_controls.png" /><p class="caption"></p>
 </div>
+<p>Note: Increasing the size of the pyplot window will space out nodes more, which is useful in the case that they overlap.</p>
 <ul>
 <li><strong>Creating a node</strong><br />A parent of -1 indicates that the node is a root node, i.e. has no parent. To create a node, select its desired parent node, enter the node's weight (integer), then click create. The graph will be draw using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. Nodes are labeled <code>Nk,w</code>, where k is the node's number and w is its weight. For example, if the first node had weight -3, it would be labeled <code>N0,-3</code>.</li>
 <li><strong>Editing a node</strong><br />To edit a node, select the node's number. The node's parent and weight will be edited at the same time. Enter the desired new data, then click <code>Done</code>. To leave the parent unchanged, select <code>same</code> from the dropdown menu. To leave the weight unchanged, leave the entry field empty.</li>
-<li><strong>Saving/loading/exiting</strong><br />Click the <code>Save</code> button to save the graph data in a plaintext file. The file will contain the adjacency list of the graph, followed by a list of the node attributes.<br />Click the <code>Load</code> button to load graph data from a plaintext file. The file must be in the same format used by <code>Save</code>. Loading a file will remove the current graph drawn in matplotlib.pyplot. After loading a file, nodes may be created or edited.<br />Click the <code>Done/compute</code> button to close the editor and compute the correction terms. Click the <code>Cancel</code> button to close the editor without computing anything.</li>
+<li><strong>Deleting a node</strong> Only the last node (highest index) can be deleted.</li>
+<li><strong>Drawing/Saving/loading/exiting</strong>
+<ul>
+<li>The <code>Draw graph</code> button will open pyplot and draw the current graph. The</li>
+<li>program will automatically do this each time a node is created, edited, or deleted; this button is useful in case you close the pyplot window and don't want to create, edit, or delete a node or load a new graph.</li>
+<li>Click the <code>Save</code> button to save the graph data in a plaintext file. The file will contain the adjacency list of the graph, followed by a list of the node attributes.</li>
+<li>Click the <code>Load</code> button to load graph data from a plaintext file. The file must be in the same format used by <code>Save</code>. Loading a file will remove the current graph shown in pyplot. After loading a file, nodes may be created or edited. Note: The program uses the <code>eval()</code> method to parse the node attribute data. Thus, don't put Python code there that will harm your computer. (The program will raise an error if the data isn't a list, so doing this accidentally would be practically impossible.)</li>
+<li>Click the <code>Done/compute</code> button to close the editor and compute the correction terms.</li>
+<li>Click the <code>Cancel</code> button to close the editor without computing anything.</li>
+<li>If attempting to compute the correction terms, an error message will pop up if the quadratic form is not negative definite.</li>
+</ul></li>
 </ul>
 <h3 id="options">Options</h3>
 <p>Under the <code>Options</code> menu, there are two global options, <code>Show quadratic form</code> and <code>Condense correction terms</code>. Additionally, there are the submenus <code>Double branched cover</code> and <code>Plumbed 3-manifolds</code>, which only affect those input methods, respectively. If an option starts with &quot;Print&quot;, it will print additional information in the correction terms window. If an option starts with &quot;Show&quot;, it will open a new window.</p>
 <ul>
-<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code> and <code>graph commands</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line. For Seifert data, if the manifold orientation is reversed, the quadratic form will be for the altered (reversed) manifold, rather than the original.</p></li>
-<li><p><strong>Double branched cover submenu</strong><br />If the <code>Show original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. If opening a saved Knotilus file, this will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
+<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code>, <code>graph commands</code>, and <code>Seifert data</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line. For the <code>quadratic form</code> option with Seifert data, if the manifold orientation is reversed, the quadratic form will be for the altered (reversed) manifold, rather than the original.</p></li>
+<li><p><strong>Double branched cover submenu</strong><br />If the <code>Show original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. It may not work on Windows. If opening a saved Knotilus file, this option will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
 <li><p><strong>Plumbed 3-manifold submenu</strong><br />If the <code>Show weighted graph</code> option is checked, the graph will be drawn in a separate window using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. The option <code>Print modified Seifert data</code> only affects Seifert data input.</p></li>
 </ul>
 <h2 id="smith">smith</h2>

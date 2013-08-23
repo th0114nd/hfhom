@@ -250,6 +250,7 @@ def is_negative_definite(quad):
     eigenvalues = LA.eigvalsh(quad)
     for eigen in eigenvalues:
         if eigen >= 0:
+            print eigenvalues
             return False
     return True    
 

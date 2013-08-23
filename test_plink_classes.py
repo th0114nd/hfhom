@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: test_plink_classes.py
-# 08.12.13
+# 08.22.13
 
 '''
 Tests for plink_classes.py
@@ -11,7 +11,6 @@ import nose
 from nose.tools import assert_raises
 
 err = 0.00001 # error tolerance
-
 
 #
 # VertexClass tests
@@ -62,10 +61,10 @@ def test_edge_intersection():
     assert abs(e4.intersection(e2)[1] - e2.intersection(e4)[1]) < err
     
     # check parallel lines
-    assert_raises(DrawingError, e1.intersection, e12)
-    assert_raises(DrawingError, e12.intersection, e1)
-    assert_raises(DrawingError, e3.intersection, e31)
-    assert_raises(DrawingError, e31.intersection, e3)
+    assert_raises(ValueError, e1.intersection, e12)
+    assert_raises(ValueError, e12.intersection, e1)
+    assert_raises(ValueError, e3.intersection, e31)
+    assert_raises(ValueError, e31.intersection, e3)
                   
     # check normal kind of intersection
     assert abs(e2.intersection(e3)[0] - e3.intersection(e2)[0]) < err

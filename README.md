@@ -1,12 +1,27 @@
-hfhom
+hfhom/corrterms
 =====
 <!---
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
 -->
-A package to compute Heergaard Floer correction terms for some classes of 
-manifolds, as a SURF 2013 project.
+A package to compute the Heergaard Floer correction terms for some classes of 
+3-manifolds. Written for a [Caltech SURF project](http://www.surf.caltech.edu/)
+summer 2013. Information and examples concerning the correction terms may be
+found in a paper by P. Ozsvath, Z. Szabo,
+[On the Heegaard Floer homology of branched double-covers](http://www.sciencedirect.com/science/article/pii/S0001870804001690).
+
+Specifically, the package computes the correction terms for the following:
+
+* Double branched cover of an alternating link (input is an alternating link)
+    + Input type 1: [Knotilus database](http://knotilus.math.uwo.ca/)
+    + Input type 2: [Plink drawing](http://www.math.uic.edu/t3m/SnapPy/plink.html)
+
+* Plumbed 3-manifold constructed from a negative-definite weighted graph with
+  with at most two bad vertices
+    + Input type 1: Seifert fibered rational homology sphere data 
+      {e; (p1, q1),...,(pr, qr)}
+    + Input type 2: Negative-definite graph with an most two bad vertices
 
 alink
 -----
@@ -103,11 +118,19 @@ PLink file.
 Data for a Seifert fibered rational homology sphere is represented as a list
 `[e,(p1,q1),...,(pr,qr)]`, where e and all the pi, qi are integers, and all
 pi > 1 with gcd(pi, qi) = 1.
+If the resulting quadratic form is not negative definite, an error message will
+pop up.
 
 ### Weighted graph editor ###
+This input method is for plumbed 3-manifolds constructed from a negative-
+definite weighted graph with at most 2 bad vertices.
+
 Opening the editor will produce a "Graph controls" dialog.
 
 ![](images/graph_controls.png)
+
+Note: Increasing the size of the pyplot window will space out nodes more,
+which is useful in the case that they overlap.
 
 * __Creating a node__  
 A parent of -1 indicates that the node is a root node, i.e. has no parent.
@@ -121,17 +144,29 @@ To edit a node, select the node's number. The node's parent and weight will be
 edited at the same time. Enter the desired new data, then click `Done`. 
 To leave the parent unchanged, select `same` from the dropdown menu.
 To leave the weight unchanged, leave the entry field empty.
-* __Saving/loading/exiting__  
-Click the `Save` button to save the graph data in a plaintext file. The file
-will contain the adjacency list of the graph, followed by a list of the node
-attributes.  
-Click the `Load` button to load graph data from a plaintext file. The file
-must be in the same format used by `Save`. Loading a file will remove the 
-current graph drawn in matplotlib.pyplot. After loading a file, nodes may be
-created or edited.  
-Click the `Done/compute` button to close the editor and compute the correction
-terms. Click the `Cancel` button to close the editor without computing 
-anything.
+* __Deleting a node__
+Only the last node (highest index) can be deleted.
+* __Drawing/Saving/loading/exiting__  
+    + The `Draw graph` button will open pyplot and draw the current graph. The
+    + program will automatically do this each time a node is created, edited, 
+      or deleted; this button is useful in case you close the pyplot window and
+      don't want to create, edit, or delete a node or load a new graph.
+    + Click the `Save` button to save the graph data in a plaintext file. The 
+      file will contain the adjacency list of the graph, followed by a list of
+      the node attributes.
+    + Click the `Load` button to load graph data from a plaintext file. The 
+      file must be in the same format used by `Save`. Loading a file will 
+      remove the current graph shown in pyplot. After loading a file, nodes may
+      be created or edited. Note: The program uses the `eval()` method to parse
+      the node attribute data. Thus, don't put Python code there that will harm
+      your computer. (The program will raise an error if the data isn't a list,
+      so doing this accidentally would be practically impossible.)
+    + Click the `Done/compute` button to close the editor and compute the 
+      correction terms. 
+    + Click the `Cancel` button to close the editor without computing 
+      anything.
+    + If attempting to compute the correction terms, an error message will pop
+      up if the quadratic form is not negative definite.
 
 ### Options ###
 Under the `Options` menu, there are two global options, `Show quadratic form`
@@ -145,17 +180,19 @@ starts with "Show", it will open a new window.
 If the `quadratic form` option is checked, the quadratic form
 (square matrix) will be printed, in addition to the correction terms, in the
 output window. Checking the `condense correction terms` box will disable the
-`quadratic form` and `graph commands` options, and the output window will just
-contain the Knotilus archive number or filename, followed by a space and the
-correction terms, all on a single line. For Seifert data, if the manifold
-orientation is reversed, the quadratic form will be for the altered (reversed)
-manifold, rather than the original.
+`quadratic form`, `graph commands`, and `Seifert data` options, and the 
+output window will just contain the Knotilus archive number or filename,
+followed by a space and the correction terms, all on a single line. 
+For the `quadratic form` option with Seifert data, if the manifold orientation
+is reversed, the quadratic form will be for the altered (reversed) manifold,
+rather than the original.
 
 * __Double branched cover submenu__  
 If the `Show original link` option is checked, a separate window will open to 
 show the original link diagram. For Knotilus, this will open an Internet 
-browser tab to the appropriate link. If opening a saved Knotilus file, this 
-will only succeed if the filename is of the form `ax-b-c.txt` or `ax-b-c`, 
+browser tab to the appropriate link. It may not work on Windows.
+If opening a saved Knotilus file, this option will only succeed if the 
+filename is of the form `ax-b-c.txt` or `ax-b-c`, 
 where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor 
 will open with the original link drawing. The PLink file must be saved in 
 order to do this.

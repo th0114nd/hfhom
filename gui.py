@@ -1,19 +1,15 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 08.19.13
+# 08.20.13
 
 '''
 Main user interface for entering link data.
 '''
 
-# TODO weighted plumbing tree DONE! 08.19.13
 # TODO open files from File menu
 
-# TODO show weighted graph
-# TODO show modified Seifert data [e, ... ] (-Y) DONE! 08.19.13
-
 # TODO unknot??? (double branched cover of unknot is 3-sphere)
-
+# correction term is just 0 (only 1 spin structure)
 
 import traceback, os, sys
 import webbrowser
@@ -21,7 +17,7 @@ from Tkinter import *
 import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, plink, ttk
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
-from seifert import s_quad_form, correct_form, s_draw, alter_data
+from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph
 import networkx as nx
 from weighted_graph import GraphPopup
 from gui_output import OutputWindow
@@ -113,7 +109,7 @@ class StartWindow(Frame):
         
         # Plumbed 3-manifolds tab
         plumbing = Frame(note)
-        description2 = '\nCorrection terms for plumbed 3-manifolds.\n' +\
+        description2 = '\nCorrection terms for certain plumbed 3-manifolds.\n'+\
             'Input is Seifert data or a negative-definite weighted graph.'        
         Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0,
                                                     sticky='w', columnspan=4)        
@@ -249,8 +245,8 @@ class KnotilusBox(object):
             if not self.archive_num: # loaded file
                 # attempt to use filename to load original link
                 # e.g. '6x-1-1.txt' or '6x-1-1' will work
+                # parsing on '/' will probably not work on Windows
                 archive_num = self.filename.split('/')[-1].split('.txt')[0]
-                # FIXME this is only going to work on linux...
                 if valid_archive_form(archive_num):
                     browser_link(archive_num)
                 # else ignore and do nothing
@@ -393,18 +389,21 @@ class SeifertBox(object):
         self.show_weighted = show_weighted # intvar
         self.show_seifert = show_seifert # intvar
         self.condense = condense # intvar
+        self.save_file = IntVar()
         
         sframe = LabelFrame(master, text='Seifert data', font=section_font, \
                             padx=5, pady=5)
         text = Label(sframe, text='Enter Seifert data as list\n' +\
                      '[e,(p1,q1),...,(pr,qr)]')
         text.grid(row=0, column=0)
+        Checkbutton(sframe, text='Save\ngraph', variable=self.save_file).grid(\
+            row=0, column=2)
         Button(sframe, text='Go', command=self.get_seifert).grid(row=0, \
-                                                                 column=2)
-        self.entry = Entry(sframe)
+                                                                 column=3)
+        self.entry = Entry(sframe, width=17)
         self.entry.grid(row=0, column=1)
         
-        sframe.grid(padx=15, pady=10, sticky='w', column=0, columnspan=4)
+        sframe.grid(padx=15, pady=10, sticky='w', column=0, columnspan=5)
     
     def get_seifert(self):
         '''Parse Seifert data, output correction terms.'''
@@ -413,7 +412,7 @@ class SeifertBox(object):
             if stringdata == '':
                 raise ValueError('empty string')
             # parse data            
-            stringdata.replace(' ','') # remove all spaces
+            stringdata = stringdata.replace(' ','') # remove all spaces
             data = []
             stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
             stringdata = stringdata.split(',(')
@@ -440,7 +439,8 @@ class SeifertBox(object):
             return
         else:
             quad = s_quad_form(data)
-            
+            if self.save_file.get():
+                self.save(data)
             OutputWindow(self.master, quad[0], quad[0], data,
                              showquad=self.show_quad.get(), 
                              condense=self.condense.get(),
@@ -448,6 +448,22 @@ class SeifertBox(object):
                              seifertdata=alter_data(data))
             if self.show_weighted.get():
                 s_draw(data)
+    
+    def save(self, data):
+        '''Save weighted star graph to file as adjacency list and node data.'''
+        options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        filename = tkFileDialog.asksaveasfilename(**options)
+        
+        if filename:
+            startree = make_graph(data)
+            adjfile = open(filename, 'wb')
+            nx.write_adjlist(startree, adjfile)            
+            adjfile.write('\nDATA\n')
+            adjfile.write(str(startree.nodes(data=True)))
+            adjfile.close()
+            print 'Graph data saved to %s' % filename
 
 class WeightedGraphBox(object):
     '''

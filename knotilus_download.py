@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
-# 08.12.13
+# 08.20.13
 
 import sys, time
 import cStringIO
@@ -50,7 +50,7 @@ def get_page_source(url, gui=False):
         else:
             tkMessageBox.showwarning('URLError', 'Cannot access %s.\n\n' %url +\
                                      'Please check Internet connection.')
-        raise urllib2.URLError()
+        raise urllib2.URLError('cannot access')
     page_source = page.read()
     print '[DONE]'
     page.close()
@@ -126,30 +126,38 @@ def get_plaintext(archive, gui=False, max_attempts=12):
     loaded = False
     
     start = time.time()
-    for i in range(max_attempts):
-        if plaintext != '': # loaded/annealed completely
-            loaded = True
+    while 1:
+        tryagain = False        
+        for i in range(max_attempts):
+            if plaintext != '': # loaded/annealed completely
+                loaded = True
+                break
+            # not loaded/annealed completely => keep refreshing url_load to load it
+            url_load = 'http://knotilus.math.uwo.ca/show.php?' + \
+                'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
+            page = urllib2.urlopen(url_load)
+            print 'Annealing...'
+            if i == 1 and gui: # show on second attempt
+                tkMessageBox.showinfo('Annealing', \
+                                      'Annealing...this may take up to 20 seconds,'\
+                                      +' depending on network connections.')
+            time.sleep(1.5) # 1.5 seconds seems around the best waiting time
+            plaintext = get_page_source(url, gui)        
+            page.close()
+        if not loaded:
+            if not gui:
+                print 'failed to anneal in %i attempts.'%max_attempts + \
+                      'please try again and check internet connection.' 
+            else:
+                retry = tkMessageBox.showwarning('Annealing', 
+                    'Failed to anneal in %i attempts.'%max_attempts +\
+                    'Press OK to try again, Cancel to abort.')
+                if retry:
+                    tryagain = True
+                else:
+                    return
+        if not tryagain:
             break
-        # not loaded/annealed completely => keep refreshing url_load to load it
-        url_load = 'http://knotilus.math.uwo.ca/show.php?' + \
-            'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
-        page = urllib2.urlopen(url_load)
-        print 'Annealing...'
-        if i == 1 and gui: # show on second attempt
-            tkMessageBox.showinfo('Annealing', \
-                                  'Annealing...this may take up to 20 seconds,'\
-                                  +' depending on network connections.')
-        time.sleep(1.5) # 1.5 seconds seems around the best waiting time
-        plaintext = get_page_source(url, gui)        
-        page.close()
-    if not loaded:
-        if not gui:
-            print 'failed to anneal in %i attempts. please try again and check internet connection.' %max_attempts
-        else:
-            retry = tkMessageBox.showwarning('Annealing', 'Failed to anneal in %i attempts.' \
-                                     + 'Press OK to try again, Cancel to abort.' %max_attempts)
-            if retry:
-                pass # ??? TODO retry...
     print 'took %g sec to anneal' % (time.time() - start)
     return plaintext
 

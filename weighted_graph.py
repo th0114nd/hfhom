@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: weighted_graph.py
-# 08.20.13
+# 08.22.13
 
 '''
 Plumbed 3-manifolds represented as negative-definite weighted forests with at 
@@ -9,18 +9,12 @@ most 2 bad vertices
 Uses networkx to draw graphs and get quadratic form
 '''
 
-# TODO it is recommended you do NOT edit the exported files by hand
-# missing a numbered node will fail
-
-# TODO test script
-# check if forest DONE! 08.20.13
-# check missing nodes thing works
-
-# TODO check that loading and then creating/editing works DONE! 08.19.13
+# It is recommended you do NOT edit the exported (saved) files by hand.
+# Skipping a node number (e.g. having N3 but not N2) will raise an error.
 
 # Known issues
 # cannot handle missing nodes
-# cannot delete nodes
+# can only delete last node
 
 from Tkinter import *
 import tkFileDialog, tkMessageBox
@@ -31,26 +25,37 @@ import traceback
 from gui_output import OutputWindow
 
 import numpy
-from graph_quad import symmetric, is_negative_definite 
+from graph_quad import symmetric, is_negative_definite
 
 class GraphPopup(Frame):
-    def __init__(self, master, graph, condense=None, show_quad=None, 
-                 show_weighted=None):
-        self.master = master
-        self.top = Toplevel(master)
-        self.top.title('Graph controls')
-        
+    '''
+    Graph controls window. 
+    
+    If used in non-GUI mode, can only load graphs. (cannot create/edit/delete)
+    Saving will open a window. (really meant to be used in GUI mode; non-GUI
+    mode is for running tests)
+    '''
+    def __init__(self, master, graph=None, condense=None, show_quad=None, 
+                 show_weighted=None, gui=True):
         self.condense = condense # variable
         self.show_quad = show_quad # variable
         self.show_weighted = show_weighted # variable
-        
         self.info = 'unknown' # inputinfo for the output window
-        
         self.nodes = []
-        self.graph = graph # networkx graph nx.Graph()
-                           # Nodes are named N0, N1, N2,...
-                           # Nodes have int attr. 'weight' and 'parent' (index)
+        if graph:
+            self.graph = graph # networkx graph nx.Graph()
+                               # Nodes are named N0, N1, N2,...
+                               # Nodes have int attr. 'weight', 'parent' (index)
+        else: # None
+            self.graph = nx.Graph()
         self.num_nodes = 0
+        self.gui = gui
+        
+        if not gui:
+            return
+        self.master = master
+        self.top = Toplevel(master)
+        self.top.title('Graph controls')        
         
         self.frame = self.top
         
@@ -96,11 +101,23 @@ class GraphPopup(Frame):
         
         Button(self.frame, text='Done', command=self.edit_node).grid(row=4, 
                                                                      column=4)
+        separator = Frame(self.frame, height=2, bd=1, relief=SUNKEN)
+        separator.grid(row=5, sticky='we', padx=5, pady=5, columnspan=5)
+        
+        # Delete last node
+        Label(self.frame, text='Delete last node').grid(row=6, column=0)
+        self.del_node = Label(self.frame, text='Node #%i'%self.num_nodes)
+        self.del_node.grid(row=6, column=1) 
+        Button(self.frame, text='Delete', command=self.delete_node).grid(row=6, column=4)
         
         separator = Frame(self.frame, height=2, bd=1, relief=SUNKEN)
-        separator.grid(row=5, sticky='we', padx=5, pady=5, columnspan=5)         
+        separator.grid(row=7, sticky='we', padx=5, pady=5, columnspan=5)         
         
-        Button(self.frame, text='Save', command=self.save).grid(row=9, column=1)
+        # File buttons
+        Button(self.frame, text='Draw graph', command=self.update_graph).grid(\
+            row=9, column=0)
+        Button(self.frame, text='Save as', command=self.save).grid(row=9, 
+                                                                   column=1)
         Button(self.frame, text='Load', command=self.load).grid(row=9, column=2)
         Button(self.frame, text='Done/compute', command=self.close).grid(row=9,
                                                                     column=3)
@@ -114,28 +131,39 @@ class GraphPopup(Frame):
         plt.clf() # erase figure
         labels = dict((n, '%s,%s' %(n,a['weight'])) \
                       for n,a in self.graph.nodes(data=True))
-        nx.draw(self.graph,labels=labels,node_size=1000)
+        nx.draw_graphviz(self.graph, labels=labels, node_size=700, width=3, 
+                         alpha=0.7)
         plt.show()
     
-    def missing_node(self):
+    def missing_nodes(self):
         '''
-        Return list of indices of missing nodes.
+        Return list of indices of missing nodes, using highest numbered node as
+        the total number of nodes.
         
         By 'missing a node', mean that node numbering skips from, eg. N1 to N3,
         with N2 missing.
+        
+        Raises error if any node indices aren't integers or are negative ints.
         '''
         nodes = self.graph.nodes(data=False)
-        num_nodes = len(nodes)
+        num_nodes = 0
         indices = []
         for node in nodes:
-            indices.append(int(node[1])) # node is Nk, node[1] gives int k
+            indices.append(int(node[1:])) # node is Nk, node[1:] gives int k
+            assert int(node[1:]) >= 0
+            if int(node[1:]) > num_nodes:
+                num_nodes = int(node[1:])
         return set(range(num_nodes)).difference(set(indices))
     
     def create_node(self):
         '''
         Create a new node from the "Create New" options.
         A parent index of -1 means it is a root node (no parent).
+        Only works when used with the GUI.
         '''
+        if not self.gui:
+            print 'Cannot create nodes in non-GUI mode'
+            return
         try:
             n_weight = int(self.n_weight.get())
         except:
@@ -171,9 +199,16 @@ class GraphPopup(Frame):
             self.e_parentmenu.grid(row=4, column=2)
         self.num_nodes += 1
         self.update_graph()
+        # update Delete menu
+        self.del_node.destroy()
+        self.del_node = Label(self.frame, text='Node #%i'%(self.num_nodes-1))
+        self.del_node.grid(row=6, column=1)        
     
     def edit_node(self):
         '''Edit node according to "Edit node" options.'''
+        if not self.gui:
+            print 'Cannot edit nodes in non-GUI mode'
+            return
         if self.num_nodes == 0:
             tkMessageBox.showerror('No nodes', 
                                    'No nodes to edit. You must create a node.')
@@ -209,9 +244,48 @@ class GraphPopup(Frame):
             if weight != '':
                 self.graph.node['N%i'%node]['weight'] = int(weight)
         except ValueError:
+            tkMessageBox.showerror('Invalid weight', 'Invalid weight.')
             raise ValueError('Invalid weight')
         
         self.update_graph() # redraw graph
+    
+    def delete_node(self):
+        '''Delete the last node.'''
+        if not self.gui:
+            print 'Cannot delete nodes in non-GUI mode'
+            return
+        if self.num_nodes == 0:
+            tkMessageBox.showwarning('No nodes', 'Nothing to delete')
+            return
+        self.graph.remove_node('N%i'%(self.num_nodes-1))
+        print 'Deleted node %i'%(self.num_nodes-1)
+        # update Create menu
+        self.n_parent_opt.pop()
+        self.n_parentmenu.destroy()
+        self.n_parentmenu = OptionMenu(self.frame, self.n_parent_var, 
+                                       *self.n_parent_opt)
+        self.n_parent_var.set(self.num_nodes-2) # default parent is newest node
+        self.n_parentmenu.grid(row=1, column=1)        
+        # update Edit menu
+        self.e_node_opt.pop()
+        self.e_nodemenu.destroy()
+        self.e_nodemenu = OptionMenu(self.frame, self.e_node_var, 
+                                     *self.e_node_opt)
+        self.e_nodemenu.grid(row=4, column=1)
+        
+        self.e_parent_opt.pop()
+        self.e_parentmenu.destroy()
+        self.e_parentmenu = OptionMenu(self.frame, self.e_parent_var, 
+                                       *self.e_parent_opt)
+        self.e_parentmenu.grid(row=4, column=2)        
+        # update Delete menu
+        self.del_node.destroy()
+        self.del_node = Label(self.frame, text='Node #%i'%(self.num_nodes-2))
+        self.del_node.grid(row=6, column=1)
+        self.num_nodes -= 1
+        self.nodes.pop()
+        
+        self.update_graph()
     
     def save(self):
         '''Save to file as adjacency list and node data.'''
@@ -229,7 +303,7 @@ class GraphPopup(Frame):
             print 'Graph data saved to %s' % filename
             self.info = filename        
 
-    def load(self):
+    def load(self, filename=None):
         '''
         Load adjacency list and data from file. This will remove the graph 
         created by the editor in the current session.
@@ -255,11 +329,12 @@ class GraphPopup(Frame):
         0}), ('N2', {'weight': -3, 'parent': 0}), ('N3', {'weight': -3, 
         'parent': 0})]
         '''
-        # open file options
-        options = {}
-        options['defaultextension'] = '.txt'
-        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
-        filename = tkFileDialog.askopenfilename(**options)
+        if not filename: 
+            # open file options
+            options = {}
+            options['defaultextension'] = '.txt'
+            options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+            filename = tkFileDialog.askopenfilename(**options)
 
         if filename == '': # canceled
             return
@@ -268,7 +343,8 @@ class GraphPopup(Frame):
             adjfile = open(filename, 'r')
             self.info = filename
         except:
-            tkMessageBox.showwarning('Open file',
+            if self.gui:
+                tkMessageBox.showwarning('Open file',
                                          'Cannot open file %s.' %filename \
                                     +'Aborting operation; please try again.')
             raise IOError('failed to open file')
@@ -287,13 +363,9 @@ class GraphPopup(Frame):
             self.graph = nx.parse_adjlist(adjlist) # got graph
             self.num_nodes = len(self.graph.nodes(data=False))            
             if not is_forest(self.graph):
-                tkMessageBox.showerror('Forest', 
-                                    'Not a forest (disjoint union of trees).')
-                raise ValueError('not a forest')
-            missing_nodes = self.missing_node()
+                raise ValueError('not a forest (disjoint union of trees)')
+            missing_nodes = self.missing_nodes()
             if missing_nodes != set([]):
-                tkMessageBox.showerror('Nodes', 
-                                    'Missing nodes(s) %s' %str(missing_nodes))
                 raise ValueError('missing node(s)')
             # get the node data- must be preceded by a line starting with 'DATA'
             while 1:
@@ -315,39 +387,49 @@ class GraphPopup(Frame):
             for index in range(self.num_nodes):
                 self.nodes.append('N%i' % index)
         except Exception as error:
-            tkMessageBox.showwarning('Loading', 'Loading failed - %s%s\n%s'\
+            if self.gui:
+                tkMessageBox.showwarning('Loading', 'Loading failed - %s%s\n%s'\
                                 %(type(error),filename, traceback.format_exc()))
             print traceback.print_exc()
             return
         # update graph control options
-        self.n_parent_opt = range(-1, self.num_nodes)
-        self.n_parentmenu = OptionMenu(self.frame, self.n_parent_var, 
-                                       *self.n_parent_opt)
-        self.n_parentmenu.grid(row=1, column=1)
-        self.e_node_opt = range(self.num_nodes)
-        self.e_nodemenu = OptionMenu(self.frame, self.e_node_var, 
-                                     *self.e_node_opt)        
-        self.e_nodemenu.grid(row=4, column=1)        
-        self.e_parent_opt = ['same']
-        self.e_parent_opt.extend(range(-1, self.num_nodes))
-        self.e_parentmenu = OptionMenu(self.frame, self.e_parent_var, 
-                                       *self.e_parent_opt)                
-        self.e_parentmenu.grid(row=4, column=2)
-        
+        if self.gui:
+            self.n_parent_opt = range(-1, self.num_nodes)
+            self.n_parentmenu = OptionMenu(self.frame, self.n_parent_var, 
+                                           *self.n_parent_opt)
+            self.n_parentmenu.grid(row=1, column=1)
+            self.e_node_opt = range(self.num_nodes)
+            self.e_nodemenu = OptionMenu(self.frame, self.e_node_var, 
+                                         *self.e_node_opt)        
+            self.e_nodemenu.grid(row=4, column=1)        
+            self.e_parent_opt = ['same']
+            self.e_parent_opt.extend(range(-1, self.num_nodes))
+            self.e_parentmenu = OptionMenu(self.frame, self.e_parent_var, 
+                                           *self.e_parent_opt)                
+            self.e_parentmenu.grid(row=4, column=2)
+            
+            self.del_node.destroy()
+            self.del_node = Label(self.frame, text='Node #%i'%(self.num_nodes-1))
+            self.del_node.grid(row=6, column=1)
+
+            self.update_graph()
         print 'Graph data successfully loaded from %s' % filename        
-        self.update_graph()
         
     def close(self):
         '''Close and output correction terms.'''
+        if not self.gui:
+            print 'Nothing to close'
+            return
         if self.num_nodes == 0:
             tkMessageBox.showerror('No nodes', 
                                    'No graph drawn. Closing editor.')
             self.top.destroy()
             return
         quad = g_quad(self.graph, self.nodes)
+        self.save()
         
         self.top.destroy()
-        self.master.quit()
+        #self.master.quit()
         if not self.show_weighted.get():
             plt.close('all')            
         OutputWindow(self.master, quad, quad, self.info,
@@ -356,10 +438,13 @@ class GraphPopup(Frame):
     
     def cancel(self):
         '''Exit program without computing correction terms.'''
-        print 'Aborting...'
+        if not self.gui:
+            print 'Nothing to close'
+            return
+        print 'Quitting...'
         plt.close('all')
         self.top.destroy()
-        self.master.quit()
+        #self.master.quit()
 
 def is_forest(graph):
     '''
@@ -383,11 +468,13 @@ def num_bad_vertices(graph, node_list):
     '''
     num = 0
     for node in node_list:
+        assert type(graph.node[node]['weight']) is int
+        assert type(graph.degree(node)) is int
         if graph.node[node]['weight'] > -graph.degree(node):
             num += 1
     return num
     
-def g_quad(graph, node_list):
+def g_quad(graph, node_list, gui=True):
     '''
     Return quadratic form (numpy array) of networkx graph 'graph', ordered
     according to the node names in 'node_list'.
@@ -399,16 +486,20 @@ def g_quad(graph, node_list):
     '''
     assert len(node_list) == len(graph.nodes(data=False))
     assert is_forest(graph)
-    if num_bad_vertices(graph, node_list) >= 2:
-        tkMessageBox.showwarning('Bad vertices', 'More than two bad vertices.')
-        raise ValueError('More than two bad vertices')
+    num_bad = num_bad_vertices(graph, node_list)
+    if num_bad > 2:
+        if gui:
+            tkMessageBox.showwarning('Bad vertices', 
+                          'More than two bad vertices. (There are %i.)'%num_bad)
+        raise ValueError('More than two bad vertices. (There are %i.)'%num_bad)
     # create adjacency matrix, ordered according to node_list
     adj = nx.to_numpy_matrix(graph, nodelist=node_list, dtype=numpy.int)
     for index, node in enumerate(node_list): # change diagonal
         adj[index, index] = graph.node[node]['weight']
     if not is_negative_definite(adj):
-        tkMessageBox.showwarning('Quadratic form', 
-                                 'Quadratic form is not negative definite')
+        if gui:
+            tkMessageBox.showwarning('Quadratic form', 
+                                     'Quadratic form is not negative definite')
         print adj
         raise ValueError('quadratric form is not negative definite')        
     return adj
@@ -416,7 +507,7 @@ def g_quad(graph, node_list):
 
 if __name__ == '__main__':
     # this file really intended to be used with gui.py, not by itself
-    print 'Do NOT use Done/Compute. Use Cancel instaed.'
+    print 'Do NOT use Done/Compute. Use Cancel instead.'
     print 'Then close the root tk window.'
     G = nx.Graph()
     

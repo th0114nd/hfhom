@@ -42,7 +42,7 @@ class OutputWindow(object):
                                    % (graph_plot(t), graph_plot(m)))
             if showseifert:
                 self.output.insert(INSERT, 
-                    '\nAltered Seifert data:%s, reversed = %s\n' %seifertdata)
+                    '\nAltered Seifert data: %s, reversed = %s\n' %seifertdata)
         #self.output.configure(state=DISABLED) # read only
         self.output.grid(row=1, column=0, columnspan=3)
         
