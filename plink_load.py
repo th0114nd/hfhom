@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: plink_load.py
-# 08.22.13
+# 09.03.13
 
 '''
 This module has functions to load Plink data and make objects (Vertices,
@@ -16,6 +16,7 @@ If no filename is specified, Plink editor will open.
 from plink_classes import *
 import StringIO
 import Tkinter, tkFileDialog, tkMessageBox
+import numpy
 
 #
 # Check input
@@ -38,11 +39,87 @@ def is_alternating(link):
     try:
         link.make_alternating() # will error if not closed
     except IndexError:
-        return True # for some reason Plink has an IndexError on the unknot 
-                     # if there are no crossings in the projection FIXME
+        return True # for some reason Plink has an IndexError if there is a
+                     # component with no crossings or intersections
+                     # This only happens in 2 cases - unknot or 
+                     #     split link with unknot as a component.
+                     # Latter case handled by is_nonsplit
     if link.SnapPea_projection_file() == original:
         return True
     return False 
+
+def is_nonsplit(num_comp, edges, inters):
+    '''
+    Return 'True' if link is non-split, 'False' otherwise.
+    
+    num_comp: number of components
+    edges:    tuples of vertex indicies (works with output from load_plink)
+    inter:    tuples of edge indices (works with output from load_plink)
+    
+    See http://en.wikipedia.org/wiki/Split_link
+    '''
+    # Algorithm:
+    # form graph: nodes = knot components
+    #             add edge b/w nodes iff there exists inter. b/w components
+    # alternating link is non-split iff this graph is connected (BFS search)
+    all_comp = [] # set of all vertices of knot (index = knot index)
+    cur_comp = 0 # current component index
+    for edge in edges:
+        new = True # indicates first instance of matching edge with component
+        index_added_to = 0
+        to_delete = []
+        # check if edge is already part of a component
+        for index in range(len(all_comp)): # loop through all components
+            comp = all_comp[index] # set of all vertices of that component
+            if edge[0] in comp or edge[1] in comp:
+                if new: # edge hasn't been added to any components yet
+                    comp |= set([edge[0], edge[1]]) # add to set
+                    all_comp[index] = comp # update
+                    new = False
+                    index_added_to = index
+                else: # already added to previous node index_added_to
+                    # combine these knots (they're connected by an edge so
+                    # are part of the same knot)
+                    all_comp[index_added_to] = all_comp[index_added_to].union(\
+                        all_comp[index])
+                    to_delete.append(index) # will delete the other
+        if new: # never found a component to match, so make a new component
+            all_comp.append(set([edge[0], edge[1]]))
+            cur_comp += 1
+        # clean up
+        for itemindex in to_delete:
+            del all_comp[itemindex]
+    assert len(all_comp) == num_comp
+    
+    # form adjacency matrix
+    # each node is a knot, connected by edge iff exists intersection
+    adj_matrix = numpy.zeros((num_comp, num_comp), dtype=numpy.int)
+    for inter in inters:
+        edge1, edge2 = edges[inter[0]], edges[inter[1]]
+        # find which knots edge1, edge2 are part of
+        for index in range(len(all_comp)): 
+            if edge1[0] in all_comp[index] or edge1[1] in all_comp[index]:
+                knot1 = index
+            if edge2[0] in all_comp[index] or edge2[1] in all_comp[index]:
+                knot2 = index
+        adj_matrix[knot1][knot2] = 1
+        adj_matrix[knot2][knot1] = 1
+    # got adjacency matrix
+    # now do a BFS to check if it only has one component
+    included = [0 for i in range(num_comp)]
+    queue = [0]
+    num_nodes = 0
+    while queue: # nonempty
+        current = queue.pop()
+        num_nodes += 1
+        included[current] = 1
+        for index in range(num_comp):
+            if adj_matrix[current][index] == 1 and included[index] == 0: 
+                # (has an edge connecting node to current) and (is a new node)
+                queue.append(index)
+    if num_nodes == num_comp: # #nodes in connected part = total
+        return True
+    return False
 
 #
 # Update object properties
@@ -449,10 +526,10 @@ def load_plink(filename='', gui=False):
     
     knot.readline() # kill the first line
     try: # try to parse the file
-        num_links = int(knot.readline())
+        num_knots = int(knot.readline())
         
-        # 1st section - number of the vertex starting each link - don't need this
-        for i in range(num_links):
+        # 1st section - number of the vertex ending each link (don't need)
+        for i in range(num_knots):
             knot.readline() # just get rid of these lines
             
         # 2nd section - vertices
@@ -477,6 +554,16 @@ def load_plink(filename='', gui=False):
     except:
         raise ValueError('failed to parse file. perhaps a bad file?')
     knot.close()
+    # check link is non-split
+    if not is_nonsplit(num_knots, edges, inter):
+        if gui:
+            tkMessageBox.showerror('Split link', 'Link is split, i.e. there' +\
+                                   ' is a 2-sphere in its complement '+\
+                                   'separating components from each other.')
+        print 'Link is split'
+        print 'There is a 2-sphere in its complement separating components '+\
+              'from each other.'
+        raise ValueError('Link is split.')
     return (vertices, edges, inter, num_vert, num_edges, num_inter, filename)
 
 def usage():

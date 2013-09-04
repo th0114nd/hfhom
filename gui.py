@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 08.20.13
+# 08.23.13
 
 '''
 Main user interface for entering link data.
@@ -8,14 +8,12 @@ Main user interface for entering link data.
 
 # TODO open files from File menu
 
-# TODO unknot??? (double branched cover of unknot is 3-sphere)
-# correction term is just 0 (only 1 spin structure)
-
 import traceback, os, sys, webbrowser
 import plink
 import networkx as nx
 from Tkinter import *
-import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, ttk, tkHyperlinkManager
+import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, ttk
+import tkHyperlinkManager
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
 from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph
@@ -110,9 +108,9 @@ class StartWindow(Frame):
         # Plumbed 3-manifolds tab
         plumbing = Frame(note)
         description2 = '\nCorrection terms for certain plumbed 3-manifolds.\n'+\
-            'Input is Seifert data or a negative-definite weighted graph.'        
+            'Input is Seifert data or a negative-definite weighted graph.'
         Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0,
-                                                    sticky='w', columnspan=4)        
+                                                    sticky='w', columnspan=4)
         seifert = SeifertBox(plumbing, section_font, self.condensed, show_quad,
                              show_weighted, show_seifert)
         graph = WeightedGraphBox(plumbing, section_font, self.condensed, 
@@ -212,7 +210,8 @@ class KnotilusBox(object):
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
                                      'Loading failed (%s)\n%s'
-                                     %(self.filename, traceback.format_exc().splitlines()[-1]))
+                                     %(self.filename, \
+                                       traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
         
@@ -251,7 +250,7 @@ class KnotilusBox(object):
                     browser_link(archive_num)
                 # else ignore and do nothing
             else:
-                browser_link(self.archive_num) # open browser to original link        
+                browser_link(self.archive_num) # open browser to original link
 
 class PLinkBox(object):
     '''PLink loading'''
@@ -280,7 +279,6 @@ class PLinkBox(object):
                                                         column=1, sticky='W')
       
         pframe.grid(padx=15, pady=5, sticky='w', column=0, columnspan=4)
-    
         
     def new_plink(self):
         '''Draw new link in PLink'''
@@ -289,14 +287,13 @@ class PLinkBox(object):
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
                                      'Loading failed (%s)\n%s' \
-                                     % (filename, traceback.format_exc().splitlines()[-1]))
+                                     %(filename, \
+                                       traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return            
         object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
                                        data[5])
         regions = object_data[3]
-        quad = regions_to_quad(regions)
-        
         if data[6] == '':
             path = 'PLink data not saved'
         else:
@@ -326,7 +323,8 @@ class PLinkBox(object):
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
                                      'Loading failed (%s)\n%s' \
-                                     % (filename, traceback.format_exc().splitlines()[-1]))
+                                     %(filename,
+                                       traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
 
@@ -339,20 +337,25 @@ class PLinkBox(object):
     
     def p_output(self, regions, vie, inputinfo):
         '''Output correction terms'''
-        quad = regions_to_quad(regions)
+        if regions: # non-empty (i.e. not unknot with no crossings)
+            quad = regions_to_quad(regions)
+            corr = regions_to_quad(regions) # TODO correction terms
+        else: # unknot with no crossings
+            quad = 'N/A (no crossings)'
+            corr = '{0}' # only 1 spin structure # TODO check this later
     
         if self.condense.get():
-            OutputWindow(self.master, quad, quad, inputinfo, condense=True)
+            OutputWindow(self.master, corr, quad, inputinfo, condense=True)
         else:
-            OutputWindow(self.master, quad, quad, inputinfo, \
+            OutputWindow(self.master, corr, quad, inputinfo, \
                          showquad=self.show_quad.get(), \
                          showgraph=self.show_graph.get(), regions=regions) 
 
         if self.show_shaded.get():
             ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2],
-                             inputinfo) # open window to show shaded link        
+                             inputinfo) # open window to show shaded link
         if self.show_link.get():
-            if inputinfo != 'PLink data not saved':
+            if inputinfo != 'PLink data not saved': # can only do if saved
                 editor = plink.LinkEditor()
                 editor.load(inputinfo)   
 
@@ -524,7 +527,8 @@ class AboutWindow(object):
         text = Text(self.top, width=65)
         hyperlink = tkHyperlinkManager.HyperlinkManager(text)
         text.insert(INSERT, about_text1)
-        text.insert(INSERT, 'https://github.com/th0114nd/hfhom', hyperlink.add(self.project_link))
+        text.insert(INSERT, 'https://github.com/th0114nd/hfhom', 
+                    hyperlink.add(self.project_link))
         text.insert(INSERT, about_text2)
         text.configure(state=DISABLED) # read only
         text.pack()

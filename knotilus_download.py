@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
-# 08.20.13
+# 08.23.13
 
 import sys, time
 import cStringIO
@@ -78,8 +78,9 @@ def gauss_code(archive, gui=False):
     '''
     # make sure archive is in the correct from ax-b-c for ints a,b,c
     if not valid_archive_form(archive):
-        #if gui: # ALREADY CHECKED BY gui.py
-        #    tkMessageBox.showerror('Archive number form', 'archive num must be of form ax-b-c, for a,b,c ints')
+        #if gui: # already checked by gui.py
+        #    tkMessageBox.showerror('Archive number form', \
+        #           'archive num must be of form ax-b-c, for a,b,c ints')
         raise KURLError('archive num must be of form ax-b-c, for a,b,c ints')
     
     url = 'http://knotilus.math.uwo.ca/draw.php?archive=%s&javadraw=off'%archive
@@ -95,7 +96,8 @@ def gauss_code(archive, gui=False):
             break
     if valid == False: # didn't find the Gauss code
         if gui:
-            tkMessageBox.showwarning('Archive number', 'Not a valid archive number.'\
+            tkMessageBox.showwarning('Archive number', 
+                                     'Not a valid archive number.'\
                                    +' Aborting now.')
         raise KURLError('not a valid archive number')
     
@@ -132,14 +134,14 @@ def get_plaintext(archive, gui=False, max_attempts=12):
             if plaintext != '': # loaded/annealed completely
                 loaded = True
                 break
-            # not loaded/annealed completely => keep refreshing url_load to load it
+            # not loaded/annealed completely => keep refreshing url_load to load
             url_load = 'http://knotilus.math.uwo.ca/show.php?' + \
                 'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
             page = urllib2.urlopen(url_load)
             print 'Annealing...'
             if i == 1 and gui: # show on second attempt
                 tkMessageBox.showinfo('Annealing', \
-                                      'Annealing...this may take up to 20 seconds,'\
+                                  'Annealing...this may take up to 20 seconds,'\
                                       +' depending on network connections.')
             time.sleep(1.5) # 1.5 seconds seems around the best waiting time
             plaintext = get_page_source(url, gui)        

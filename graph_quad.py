@@ -27,7 +27,7 @@ OR     python graph_quad.py -p [filename]
 -p to use Plink, [filename] to load file
 '''
 
-# useful for circuits: [y.edge for y in list_of_edges] is a list of the edges as 
+# useful for circuits: [y.edge for y in list_of_edges] is a list of the edges as
 #                      tuples (node1_index, node2_index) instead of DirEdgeClass
 #                      instances
 

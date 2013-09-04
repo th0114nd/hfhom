@@ -175,7 +175,7 @@ def cont_fraction(p, q):
             break
         cont_frac.append(quotient+1) # b/c of negative sign,
                                      # p = q*(quotient+1) - remainder'
-        # don't actually care what remainder' is, but need original remainder to 
+        # don't actually care what remainder is, but need original remainder to 
         # know when to break
         
         # prepare for next iteration

@@ -108,10 +108,11 @@ class GraphPopup(Frame):
         Label(self.frame, text='Delete last node').grid(row=6, column=0)
         self.del_node = Label(self.frame, text='Node #%i'%self.num_nodes)
         self.del_node.grid(row=6, column=1) 
-        Button(self.frame, text='Delete', command=self.delete_node).grid(row=6, column=4)
+        Button(self.frame, text='Delete', command=self.delete_node).grid(row=6,
+                                                                       column=4)
         
         separator = Frame(self.frame, height=2, bd=1, relief=SUNKEN)
-        separator.grid(row=7, sticky='we', padx=5, pady=5, columnspan=5)         
+        separator.grid(row=7, sticky='we', padx=5, pady=5, columnspan=5)
         
         # File buttons
         Button(self.frame, text='Draw graph', command=self.update_graph).grid(\
@@ -229,7 +230,7 @@ class GraphPopup(Frame):
             if old_parent != -1: # wasn't a root node
                 self.graph.remove_edge(self.nodes[node], self.nodes[old_parent])
                 print 'Removing edge from %s to %s' %(self.nodes[node], 
-                                                      self.nodes[old_parent])                
+                                                      self.nodes[old_parent])
             if e_parent != -1: # not making node a root node
                 self.graph.add_edge(self.nodes[node], self.nodes[e_parent])
                 print 'Adding edge from %s to %s' %(self.nodes[node], 
@@ -409,7 +410,7 @@ class GraphPopup(Frame):
             self.e_parentmenu.grid(row=4, column=2)
             
             self.del_node.destroy()
-            self.del_node = Label(self.frame, text='Node #%i'%(self.num_nodes-1))
+            self.del_node = Label(self.frame,text='Node #%i'%(self.num_nodes-1))
             self.del_node.grid(row=6, column=1)
 
             self.update_graph()

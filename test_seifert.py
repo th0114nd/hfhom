@@ -62,7 +62,8 @@ def test_s_quad_form():
     assert_raises(ValueError, s_quad_form, [2,(3,-2),(2,-1),(6,-5)], False)
         
     # trivial case
-    assert numpy.array_equal(s_quad_form([-4], gui=False)[0], numpy.array([[-4]]))
+    assert numpy.array_equal(s_quad_form([-4], gui=False)[0], 
+                             numpy.array([[-4]]))
     
     # test ignores q_i = 0
     assert numpy.array_equal(quad_form1[0], \

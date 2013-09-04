@@ -11,6 +11,8 @@ import nose, os
 from nose.tools import assert_raises
 
 err = 0.00001 # error tolerance
+internet = True # Set this to False if you do not have Internet connection.
+                # False => downloading from Knotilus database not tested.
 
 #
 # Graph tests 
@@ -57,8 +59,8 @@ def plink_load_objects(filename):
     return edges_regions(gNodes, gRegions), gNodes    
 
 # useful for test_edges_regions
-def knotilus_load_objects(archive):
-    gRegions = load(archive, False, False)[3]
+def knotilus_load_objects(archive, savedfile=False):
+    gRegions = load(archive, filename=savedfile)[3]
     gNodes = [NodeClass(i) for i in range(len(gRegions))]
     return edges_regions(gNodes, gRegions), gNodes
 
@@ -70,8 +72,14 @@ edge_list_p2, nodes_p2 = plink_load_objects('%s/testing/t2_p_background.txt' \
 edge_list_p3, nodes_p3 = plink_load_objects(\
     '%s/testing/t3_p_multiloop_background.txt' %path)
 edge_list_p4, nodes_p4 = plink_load_objects('%s/testing/t4_p_normal.txt' %path)
-edge_list_k1, nodes_k1 = knotilus_load_objects('10x-2-1')
-edge_list_k2, nodes_k2 = knotilus_load_objects('7x-1-2')
+if internet:
+    edge_list_k1, nodes_k1 = knotilus_load_objects('10x-2-1')
+    edge_list_k2, nodes_k2 = knotilus_load_objects('7x-1-2')
+else: # load instead
+    edge_list_k1, nodes_k1 = knotilus_load_objects('%s/testing/10x-2-1.txt'\
+                                                   % path, savedfile=True)
+    edge_list_k2, nodes_k2 = knotilus_load_objects('%s/testing/7x-1-2.txt'\
+                                                   % path, savedfile=True)
 
 def test_edges_regions():
     # Test P1 - t1_p_multiloop.txt
@@ -289,7 +297,11 @@ def test_quad_form():
                      [-1,-1,-1,-4]]))
     
     # Test K3 23x-11-1
-    edge_list_k3, nodes_k3 = knotilus_load_objects('23x-11-1')
+    if internet:
+        edge_list_k3, nodes_k3 = knotilus_load_objects('23x-11-1')
+    else:
+        edge_list_k3, nodes_k3 = knotilus_load_objects(\
+            '%s/testing/23x-11-1.txt'%path, savedfile=True)
     k3_array = numpy.zeros((12, 12), dtype=numpy.int)
     for i in range(9):
         k3_array[i][i] = -2
