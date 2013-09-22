@@ -1,12 +1,10 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 08.23.13
+# 09.22.13
 
 '''
 Main user interface for entering link data.
 '''
-
-# TODO open files from File menu
 
 import traceback, os, sys, webbrowser
 import plink
@@ -81,12 +79,22 @@ class StartWindow(Frame):
         
         # Banner image
         self.path = os.path.abspath(os.path.dirname(sys.argv[0]))
-        image = Image.open('%s/images/banner_small.png' % self.path)
-        knotimage = ImageTk.PhotoImage(image)
-        
-        bannerlabel = Label(image=knotimage)
-        bannerlabel.image = knotimage # keep reference (else garbage collected)
-        bannerlabel.grid(row=1, sticky='w', columnspan=4)
+        banner = True
+        try: # Linux/Mac
+            image = Image.open('%s/images/banner_small.png' % self.path)
+        except IOError:
+            try: # Windows
+                image = Image.open('%s\images\banner_small.png' % self.path)
+            except IOError:
+                try:
+                    image = Image.open(banner_small.png)
+                except IOError:
+                    banner = False
+        if banner:
+            knotimage = ImageTk.PhotoImage(image)
+            bannerlabel = Label(image=knotimage)
+            bannerlabel.image = knotimage # keep reference (garbage collection)
+            bannerlabel.grid(row=1, sticky='w', columnspan=4)
         
         # useful stuff
         section_font = tkFont.Font(size=9) # font for headers
@@ -118,10 +126,11 @@ class StartWindow(Frame):
         note.add(plumbing, text='Plumbed 3-manifolds')
         note.grid(sticky='w', column=0, columnspan=4, pady=5)
 
-        # Banner image again        
-        bannerlabel2 = Label(image=knotimage)
-        bannerlabel2.image = knotimage # keep reference (else garbage collected)
-        bannerlabel2.grid(sticky='w', columnspan=4)  
+        # Banner image again
+        if banner:
+            bannerlabel2 = Label(image=knotimage)
+            bannerlabel2.image = knotimage # keep reference (garbage collection)
+            bannerlabel2.grid(sticky='w', columnspan=4)  
     
     def disable_quad_graph(self, menu1, menu2, menu3):
         '''

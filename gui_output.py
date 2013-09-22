@@ -1,9 +1,10 @@
 # Caltech SURF 2013
 # FILE: gui_output.py
-# 08.19.13
+# 09.17.13
 
 from Tkinter import *
 import tkFileDialog
+from graph_quad import NodeClass, edges_regions, maximal_subtree, graph_plot
 
 class OutputWindow(object):
     '''Print output'''
