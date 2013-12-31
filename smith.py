@@ -128,7 +128,7 @@ def smith_normal_form(mat):
     tracker = {'row_op':left_track, 'col_op':right_track}
     assert type(tracker) == dict
     _smith_normal_form(x, tracker)
-    return x, (tracker['row_op'], tracker['col_op'])
+    return x, (tracker['row_op'], tracker['col_op']) # D, (U, V)
 
 def all_zero_facade(mat):
     return np.all(mat[0,1:] == 0) and np.all(mat[1:, 0] == 0)

@@ -9,34 +9,40 @@ class NDQF(object):
     '''Represents a negative definite quadratic form.'''
     
     @classmethod
-    def rational_inverse(diag, left, right):
+    def rational_inverse(cls, diag, left, right):
+        '''
+        Returns inverse of a rational matrix m with Smith normal form decomp
+        diag, (left, right). i.e. left * diag * right = m.
+        Then m^(-1) = right^(-1)diag^(-1)left^(-1).
+        '''
         def flip(n):
             if n == 0:
                 return 0
             else:
                 return Fraction(1, n)
-        new_left = np.rint(right.I).astype(int)
-        new_right = np.rint(left.I).astype(int)
-        return new_left * np.vectorize(diag) * new_right 
+        new_left = np.rint(right.I).astype(int) # inverse of right
+        new_right = np.rint(left.I).astype(int) # inverse of left
+        # right, left unimodular => inverse is also an integer matrix
+        return new_left * np.vectorize(flip)(diag) * new_right 
         
-    def __init__(mat):
+    def __init__(self, mat):
         '''Creates a quadratic form from an appropriate
         array-like value.'''
         try:
-            m = numpy.matrix(mat)
+            m = np.matrix(mat)
         except Exception as e:
             raise ValueError("Must be convertible to a numpy matrix.")
-            raise e
-        if not square(m):
+            #raise e
+        '''if not square(m):
             raise ValueError("Must be a square array to create a quad form.")
         if not negative_definite(m):
             raise ValueError("Must be a negative definite matrix.")
         if not symmetric(m):
-            raise ValueError("Must be a symmetric array.")
+            raise ValueError("Must be a symmetric array.")'''
         self.mat = m
         d, (u, v) = smith_normal_form(m)
         self.decomp = (d, (u, v))
-        self.mat_inverse = rational_inverse(d, u, v)
+        self.mat_inverse = NDQF.rational_inverse(d, u, v)
         self.compute_affine_space()
         self.compute_homology()
          
@@ -47,8 +53,8 @@ class NDQF(object):
         u = np.matrix(u)
         v = np.matrix(v)
         if u.size == v.size == self.mat.shape[0]:
-            u.reshape(1, u.size)
-            v.reshape(v.size, 1)
+            u = u.reshape(1, u.size)
+            v = v.reshape(v.size, 1)
             if inverse:
                 return u * self.mat_inverse * v
             else:
@@ -75,7 +81,7 @@ class NDQF(object):
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
         Returns the vector 'basepoint + c0 * gen[0] + c1 * gen[1]+ ...'''
-        unsummed = [c * g for (c, g) in zip(coef_list, self.gen)]
+        unsummed = [c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
 
     def correction_terms(self):
@@ -84,6 +90,8 @@ class NDQF(object):
         iterating through the relation vectors of the group.'''
         coef_lists = lrange(self.group.structure)
         representatives = map(lambda l: self.find_rep(l), coef_lists)
+        print representatives
+        
         disps = max_displacements(self.basepoint, self.group.rel)
 
     
@@ -102,8 +110,8 @@ class Hom_Group(object):
         # The bottom row vectors in rows are the ones that generate the 
         # quotient module, subject to the top rows congruent to zero.
         start = vect_dim - group_rank
-        self.gen = [rows[i] for i in range(start, vect_dim)]
-        self.rel = [rows[i] for i in range(0, start)]
+        self.gen = [rows[i] for i in range(start, vect_dim)] # generating vectors
+        self.rel = [rows[i] for i in range(0, start)] # relation vectors ( = 0 )
         return
 
     def __repr__(self):
