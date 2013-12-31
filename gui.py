@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 09.22.13
+# 09.24.13
 
 '''
 Main user interface for entering link data.
@@ -10,7 +10,8 @@ import traceback, os, sys, webbrowser
 import plink
 import networkx as nx
 from Tkinter import *
-import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, ttk
+import tkFileDialog, tkMessageBox, tkFont, ttk
+import ImageTk, Image
 import tkHyperlinkManager
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link

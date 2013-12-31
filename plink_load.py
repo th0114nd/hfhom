@@ -492,21 +492,21 @@ def load_plink(filename='', gui=False):
         if not is_alternating(editor):
             editor.window.withdraw()
             if not gui: # command line -> print
-                print 'Link is not alternating.'
-                print 'Press [Enter] to make link alternating' + \
+                print 'Link projection is not alternating.'
+                print 'Press [Enter] to make projection alternating' + \
                       '(will modify txt file),',
                 change = raw_input('Enter q to quit. ')
                 if change == '':
                     print 'Modifying file to make link alternating...'
                 elif change == 'q':
-                    raise ValueError('Link is not alternating.')
+                    raise ValueError('Link projection is not alternating.')
             else: # gui -> popup windows
                 make_alternating = tkMessageBox.askokcancel('Warning', 
-                    'Link is not alternating. Select OK to make link ' + \
-                    'alternating (will modify txt file). ' + \
+                    'Link projection is not alternating. Select OK to make ' +\
+                    'link alternating (will modify txt file). ' + \
                     'Select Cancel to abort.')
                 if not make_alternating:
-                    raise ValueError('Link is not alternating.')
+                    raise ValueError('Link projection is not alternating.')
             editor.make_alternating()
             # overwrite file
             myfile = open(filename, 'w')
