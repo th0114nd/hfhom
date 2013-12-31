@@ -18,6 +18,7 @@ from knotilus_download import valid_archive_form, browser_link
 from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph
 from weighted_graph import GraphPopup
 from gui_output import OutputWindow
+from ndqf import NDQF
 
 def regions_to_quad(regions):
     '''Return quadratic form (numpy array) given list of RegionClass objects'''
@@ -233,17 +234,18 @@ class KnotilusBox(object):
     
     def k_output(self, regions, vie, inputinfo):
         quad = regions_to_quad(regions)
+        print quad
+        quadform = NDQF(quad)
+        corr = quadform.correction_terms()
         
         if self.condense.get():
-            self.output = OutputWindow(self.master, quad, quad, inputinfo, \
+            self.output = OutputWindow(self.master, corr, quad, inputinfo, \
                                        condense=True)
         else:
             self.output = OutputWindow(self.master, quad, quad, inputinfo,
                                        showquad=self.show_quad.get(), 
                                        showgraph=self.show_graph.get(), 
-                                       regions=regions)
-        #self.master.wait_window(self.output.top)           
-        
+                                       regions=regions)        
         if self.show_shaded.get():
             ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2],
                              inputinfo, flip=True) 
@@ -349,10 +351,11 @@ class PLinkBox(object):
         '''Output correction terms'''
         if regions: # non-empty (i.e. not unknot with no crossings)
             quad = regions_to_quad(regions)
-            corr = regions_to_quad(regions) # TODO correction terms
+            quadform = NDQF(quad)
+            corr = quadform.correction_terms()
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
-            corr = '{0}' # only 1 spin structure # TODO check this later
+            corr = '{0}' # only 1 spin structure # TODO check this
     
         if self.condense.get():
             OutputWindow(self.master, corr, quad, inputinfo, condense=True)
@@ -459,9 +462,13 @@ class SeifertBox(object):
             return
         else:
             quad = s_quad_form(data)
+            quadform = NDQF(quad[0])
+            corr = quadform.correction_terms()
+            if quad[1]: # reversed orientation
+                pass # TODO reverse sign on correction terms
             if self.save_file.get():
                 self.save(data)
-            OutputWindow(self.master, quad[0], quad[0], data,
+            OutputWindow(self.master, corr, quad[0], data,
                              showquad=self.show_quad.get(), 
                              condense=self.condense.get(),
                              showseifert=self.show_seifert.get(),
@@ -512,7 +519,6 @@ class WeightedGraphBox(object):
         g = nx.Graph()
         graph = GraphPopup(self.master, g, self.condense, self.show_quad, 
                            self.show_weighted)
-        #self.master.wait_window()
 
 class AboutWindow(object):
     def __init__(self, master):

@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: weighted_graph.py
-# 08.22.13
+# 09.03.13
 
 '''
 Plumbed 3-manifolds represented as negative-definite weighted forests with at 
@@ -12,7 +12,7 @@ Uses networkx to draw graphs and get quadratic form
 # It is recommended you do NOT edit the exported (saved) files by hand.
 # Skipping a node number (e.g. having N3 but not N2) will raise an error.
 
-# Known issues
+# Known limitations
 # cannot handle missing nodes
 # can only delete last node
 
@@ -26,6 +26,7 @@ from gui_output import OutputWindow
 
 import numpy
 from graph_quad import symmetric, is_negative_definite
+from ndqf import NDQF
 
 class GraphPopup(Frame):
     '''
@@ -426,14 +427,16 @@ class GraphPopup(Frame):
                                    'No graph drawn. Closing editor.')
             self.top.destroy()
             return
+        self.save()        
         quad = g_quad(self.graph, self.nodes)
-        self.save()
+        quadform = NDQF(quad)
+        corr = quadform.correction_terms()
         
         self.top.destroy()
         #self.master.quit()
         if not self.show_weighted.get():
             plt.close('all')            
-        OutputWindow(self.master, quad, quad, self.info,
+        OutputWindow(self.master, corr, quad, self.info,
                      condense=self.condense.get(),
                      showquad=self.show_quad.get())
     
