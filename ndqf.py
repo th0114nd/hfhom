@@ -82,7 +82,7 @@ class NDQF(object):
 
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
-        Returns the vector 'basepoint + c0 * gen[0] + c1 * gen[1]+ ...'''
+        Returns the vector 'basepoint + 2(c0 * gen[0] + c1 * gen[1]+ ...)'''
         unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
 
@@ -95,7 +95,6 @@ class NDQF(object):
         listofmaxes = [-maxint-1 for i in range(len(representatives))]
         alphagen = self.get_alpha()
         for alpha in alphagen:
-            print alpha
             valid = True # whether alpha is in \mathcal{C} (C1(V)=C/(2q(V)))
             for i, coord in enumerate(alpha): # need a_i = Q(e_i,e_i) (mod 2)
                 if (self.diag_vals[i] - coord)%2 != 0: 
@@ -103,34 +102,18 @@ class NDQF(object):
                     break
             if valid:
                 class_index = self.equiv_class(alpha, representatives)
-                print self.find_abs(alpha), class_index
                 listofmaxes[class_index] = max(self.find_abs(alpha), \
                                                listofmaxes[class_index])
-        # make Fractions pretty
-        print listofmaxes
+        # get corrterms via (|alpha|^2+b)/4
         b = self.mat.shape[0]
         corrterms = [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+        # make Fractions pretty        
         pretty_list = ['%i/%i' %(f.numerator, f.denominator) \
                        if f.denominator != 1 else str(f.numerator) \
                        for f in corrterms]
         pretty_string = ', '.join(pretty_list)
+        # TODO TODO TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
         return pretty_string
-    
-    '''        for rep in representatives: # for each equivalence class in C_1(V)
-            print
-            print rep
-            maxval = -maxint-1 # smallest int            
-            betagen = self.get_beta(rep)
-            # find max in equivalence class (add 2q(V), use |a_i|<=-Q(e_i,e_i))
-            # q(e_i)(v) = [ith row of Q]*v
-            for beta in betagen:
-                #alpha = rep + betagen(rep).next()
-                alpha = rep + beta
-                alphaval = self.find_abs(alpha)
-                print alpha, alphaval
-                if alphaval > maxval:
-                    maxval = alphaval
-            listofmaxes.append(maxval)'''
     
     def find(self, mat, rep):
         '''
@@ -145,9 +128,10 @@ class NDQF(object):
         # i.e. Ax = (rep - mat) => x = A^(-1)(rep - mat)
         # if x only has integers, then same; otherwise false
         sol =  Fraction(1,2) * np.array(self.mat_inverse * np.transpose(rep - mat))
-        if sol[0,0].denominator == 1 and sol[1,0].denominator == 1: # integer
-            return True
-        return False
+        for coord in sol: # check all integer
+            if coord[0].denominator != 1:
+                return False
+        return True
     
     def equiv_class(self, mat, representatives):
         '''
@@ -210,7 +194,6 @@ class NDQF(object):
                 self.increment(counter, 0, max_list_sizes)
             else:
                 return
-    
     
 class Hom_Group(object):
     '''A homology group.'''
@@ -296,11 +279,6 @@ def nlrange(index_list):
                 yield [i_sub] + l_sub
 
 
-class Spin_Structure(object):
-    '''A what?'''
-    pass
-
-
 b=NDQF([[-2,  0,  0,  1,  1],
  [ 0,-2, -1, -1, -1],
  [ 0, -1, -2, -1, -1],
@@ -310,3 +288,5 @@ a=NDQF([[-2, -1, -1],[-1, -2, -1],[-1, -1, -2]])
 c=NDQF([[-3, -1, -1,  0],[-1, -4, -2,  0],[-1, -2, -4,  1],[ 0,  0,  1, -3]])
 ex=NDQF([[-5,2],[2,-4]])
 ex2=NDQF([[-5,-2],[-2,-4]])
+ex3=NDQF([[-2,1,0,0,0],[1,-3,1,1,0],[0,1,-2,0,0],[0,1,0,-2,1],[0,0,0,1,-2]])
+os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
