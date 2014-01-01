@@ -8,9 +8,9 @@ from graph_quad import NodeClass, edges_regions, maximal_subtree, graph_plot
 
 class OutputWindow(object):
     '''Print output'''
-    def __init__(self, master, corr_terms, quad, inputinfo, condense=False,
-                 showquad=False, showgraph=False, regions=[], showseifert=False,
-                 seifertdata=None):
+    def __init__(self, master, corr_terms, hom_struct, quad, inputinfo,
+                 condense=False, showquad=False, showhom=False, showgraph=False,
+                 regions=[], showseifert=False, seifertdata=None):
         self.master = master
         self.top = Toplevel(master)
         self.top.title('Output')
@@ -32,6 +32,9 @@ class OutputWindow(object):
         else:
             self.output.insert(INSERT, '%s\n\nCorrection terms:\n%s\n' \
                                % (inputinfo, str(self.corr)))
+            if showhom:
+                self.output.insert(INSERT, '\nStructure: H_1(Y) ~ %s\n'\
+                                   % hom_struct)
             if showquad:
                 self.output.insert(INSERT, '\nQuadratic form:\n%s\n' %str(quad))
             if showgraph:

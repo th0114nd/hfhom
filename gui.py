@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 09.24.13
+# 12.31.13
 
 '''
 Main user interface for entering link data.
@@ -44,12 +44,15 @@ class StartWindow(Frame):
         show_link = IntVar()
         show_shaded = IntVar()
         show_graph = IntVar()        
-        show_quad = IntVar()        
+        show_quad = IntVar()
+        show_hom = IntVar()
         self.condensed = IntVar()  
         show_weighted = IntVar()
         show_seifert = IntVar()
         optmenu = Menu(self.menubar, tearoff=0)
         optmenu.add_checkbutton(label='Print quadratic form',variable=show_quad)
+        optmenu.add_checkbutton(label='Print H_1(Y) type', \
+                                variable=show_hom)
         optmenu.add_checkbutton(label='Condense correction terms', \
                                 variable=self.condensed, \
                                 command=lambda: self.disable_quad_graph(
@@ -109,10 +112,11 @@ class StartWindow(Frame):
             ' an alternating link.\nInput is an alternating link.'
         Label(double_cover, text=description1, justify=LEFT).grid(row=0, \
                                             column=0, sticky='w', columnspan=4)
-        knotilus = KnotilusBox(double_cover, section_font, self.condensed, \
-                               show_quad, show_link, show_shaded, show_graph)
-        plink = PLinkBox(double_cover, section_font, self.condensed, show_quad,
-                         show_link, show_shaded, show_graph)
+        knotilus = KnotilusBox(double_cover, section_font, self.condensed,
+                               show_hom, show_quad, show_link, show_shaded, 
+                               show_graph)
+        plink = PLinkBox(double_cover, section_font, self.condensed, show_hom,
+                         show_quad, show_link, show_shaded, show_graph)
         note.add(double_cover, text='Double branched cover')
         
         # Plumbed 3-manifolds tab
@@ -121,10 +125,10 @@ class StartWindow(Frame):
             'Input is Seifert data or a negative-definite weighted graph.'
         Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0,
                                                     sticky='w', columnspan=4)
-        seifert = SeifertBox(plumbing, section_font, self.condensed, show_quad,
-                             show_weighted, show_seifert)
+        seifert = SeifertBox(plumbing, section_font, self.condensed, show_hom,
+                             show_quad, show_weighted, show_seifert)
         graph = WeightedGraphBox(plumbing, section_font, self.condensed, 
-                                 show_quad, show_weighted)
+                                 show_hom, show_quad, show_weighted)
         note.add(plumbing, text='Plumbed 3-manifolds')
         note.grid(sticky='w', column=0, columnspan=4, pady=5)
 
@@ -155,10 +159,11 @@ class StartWindow(Frame):
         
 class KnotilusBox(object):
     '''Knotilus archive number'''
-    def __init__(self, master, section_font, condense, show_quad, show_link,\
-                 show_shaded, show_graph):
+    def __init__(self, master, section_font, condense, show_hom, show_quad,
+                 show_link, show_shaded, show_graph):
         self.master = master
         self.show_quad = show_quad
+        self.show_hom = show_hom
         self.show_link = show_link
         self.show_shaded = show_shaded
         self.archive_num = None
@@ -237,15 +242,17 @@ class KnotilusBox(object):
         print quad
         quadform = NDQF(quad)
         corr = quadform.correction_terms()
+        struct = quadform.group.struct()
         
         if self.condense.get():
-            self.output = OutputWindow(self.master, corr, quad, inputinfo, \
+            self.output = OutputWindow(self.master, corr, struct, quad, inputinfo, \
                                        condense=True)
         else:
-            self.output = OutputWindow(self.master, quad, quad, inputinfo,
+            self.output = OutputWindow(self.master, corr, struct, quad, inputinfo,
+                                       showhom=self.show_hom.get(),
                                        showquad=self.show_quad.get(), 
                                        showgraph=self.show_graph.get(), 
-                                       regions=regions)        
+                                       regions=regions)
         if self.show_shaded.get():
             ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2],
                              inputinfo, flip=True) 
@@ -266,10 +273,11 @@ class KnotilusBox(object):
 
 class PLinkBox(object):
     '''PLink loading'''
-    def __init__(self, master, section_font, condense, show_quad, show_link,
-                 show_shaded, show_graph):
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
+                 show_link, show_shaded, show_graph):
         self.master = master
         self.show_quad = show_quad
+        self.show_hom = show_hom
         self.show_link = show_link
         self.show_shaded = show_shaded     
         self.show_graph = show_graph
@@ -353,14 +361,17 @@ class PLinkBox(object):
             quad = regions_to_quad(regions)
             quadform = NDQF(quad)
             corr = quadform.correction_terms()
+            struct = quadform.group.structure()
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
             corr = '{0}' # only 1 spin structure # TODO check this
+            struct = '{1}'
     
         if self.condense.get():
-            OutputWindow(self.master, corr, quad, inputinfo, condense=True)
+            OutputWindow(self.master, corr, struct, quad, inputinfo, condense=True)
         else:
-            OutputWindow(self.master, corr, quad, inputinfo, \
+            OutputWindow(self.master, corr, struct, quad, inputinfo, \
+                         showhom=self.show_hom.get(),
                          showquad=self.show_quad.get(), \
                          showgraph=self.show_graph.get(), regions=regions) 
 
@@ -405,10 +416,11 @@ class ShadedLinkWindow(object):
 
 class SeifertBox(object):
     '''Seifert data'''
-    def __init__(self, master, section_font, condense, show_quad, 
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
                  show_weighted, show_seifert):
         self.master = master
         self.show_quad = show_quad # intvar
+        self.show_hom = show_hom
         self.show_weighted = show_weighted # intvar
         self.show_seifert = show_seifert # intvar
         self.condense = condense # intvar
@@ -464,11 +476,13 @@ class SeifertBox(object):
             quad = s_quad_form(data)
             quadform = NDQF(quad[0])
             corr = quadform.correction_terms()
+            struct = quadform.group.structure()
             if quad[1]: # reversed orientation
                 pass # TODO reverse sign on correction terms
             if self.save_file.get():
                 self.save(data)
-            OutputWindow(self.master, corr, quad[0], data,
+            OutputWindow(self.master, corr, struct, quad[0], data,\
+                             showhom=self.show_hom.get(),
                              showquad=self.show_quad.get(), 
                              condense=self.condense.get(),
                              showseifert=self.show_seifert.get(),
@@ -497,11 +511,12 @@ class WeightedGraphBox(object):
     Plumbed 3-manifolds given by negative-definite weighted graphs with at 
     most 2 bad vertices.
     '''
-    def __init__(self, master, section_font, condense, show_quad, 
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
                  show_weighted):
         self.master = master
         self.show_weighted = show_weighted # var
         self.show_quad = show_quad # var
+        self.show_hom = show_hom
         self.condense = condense # var
         
         glframe = LabelFrame(master, text='Weighted graph', font=section_font,

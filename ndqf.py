@@ -41,6 +41,7 @@ class NDQF(object):
         if not symmetric(m):
             raise ValueError("Must be a symmetric array.")'''
         self.mat = m
+        self.diag_vals = [-self.mat[val, val] for val in range(self.mat.shape[0])]        
         d, (u, v) = smith_normal_form(m)
         self.decomp = (d, (u, v))
         self.mat_inverse = NDQF.rational_inverse(d, u, v)
@@ -82,7 +83,7 @@ class NDQF(object):
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
         Returns the vector 'basepoint + c0 * gen[0] + c1 * gen[1]+ ...'''
-        unsummed = [c * g for (c, g) in zip(coef_list, self.group.gen)]
+        unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
 
     def correction_terms(self):
@@ -91,8 +92,33 @@ class NDQF(object):
         iterating through the relation vectors of the group.'''
         coef_lists = lrange(self.group.structure)
         representatives = map(lambda l: self.find_rep(l), coef_lists) # elements of C_1(V)
-        listofmaxes = []
-        for rep in representatives: # for each equivalence class in C_1(V)
+        listofmaxes = [-maxint-1 for i in range(len(representatives))]
+        alphagen = self.get_alpha()
+        for alpha in alphagen:
+            print alpha
+            valid = True # whether alpha is in \mathcal{C} (C1(V)=C/(2q(V)))
+            for i, coord in enumerate(alpha): # need a_i = Q(e_i,e_i) (mod 2)
+                if (self.diag_vals[i] - coord)%2 != 0: 
+                    valid = False
+                    break
+            if valid:
+                class_index = self.equiv_class(alpha, representatives)
+                print self.find_abs(alpha), class_index
+                listofmaxes[class_index] = max(self.find_abs(alpha), \
+                                               listofmaxes[class_index])
+        # make Fractions pretty
+        print listofmaxes
+        b = self.mat.shape[0]
+        corrterms = [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+        pretty_list = ['%i/%i' %(f.numerator, f.denominator) \
+                       if f.denominator != 1 else str(f.numerator) \
+                       for f in corrterms]
+        pretty_string = ', '.join(pretty_list)
+        return pretty_string
+    
+    '''        for rep in representatives: # for each equivalence class in C_1(V)
+            print
+            print rep
             maxval = -maxint-1 # smallest int            
             betagen = self.get_beta(rep)
             # find max in equivalence class (add 2q(V), use |a_i|<=-Q(e_i,e_i))
@@ -101,13 +127,40 @@ class NDQF(object):
                 #alpha = rep + betagen(rep).next()
                 alpha = rep + beta
                 alphaval = self.find_abs(alpha)
+                print alpha, alphaval
                 if alphaval > maxval:
                     maxval = alphaval
-            listofmaxes.append(maxval)
-        #disps = max_displacements(self.basepoint, self.group.rel)
-        return listofmaxes
+            listofmaxes.append(maxval)'''
     
-    def max_bounds(self, rep):
+    def find(self, mat, rep):
+        '''
+        Returns True if 1-line np.matrix 'mat' is in the same equivalence class
+        as np.matrix 'rep', False otherwise.
+        
+        Same equivalence class <=> differ by an element in 2q(V)
+        Named for "Union-Find" programs
+        '''
+        # A = 2*self.mat; the rows of 2*self.mat generate 2q(V)
+        # Same equivalence class iff mat + Ax = rep for an INTEGER matrix x
+        # i.e. Ax = (rep - mat) => x = A^(-1)(rep - mat)
+        # if x only has integers, then same; otherwise false
+        sol =  Fraction(1,2) * np.array(self.mat_inverse * np.transpose(rep - mat))
+        if sol[0,0].denominator == 1 and sol[1,0].denominator == 1: # integer
+            return True
+        return False
+    
+    def equiv_class(self, mat, representatives):
+        '''
+        Returns the index of 'mat's equivalence class in list 'representatives'.
+        '''
+        index = 0
+        for rep in representatives:
+            if self.find(mat, rep):
+                break
+            index += 1
+        return index
+    
+    def max_bounds(self):
         '''
         Return list of all possible values in 2q(V) (note must be even) s.t. 
         alpha := rep + val satisfies |a_i| <= -Q(e_i, e_i)
@@ -116,9 +169,8 @@ class NDQF(object):
                      possible values for a_i
         'max_list_sizes' - a list of the size of each list_i in 'max_list'
         '''
-        diag_vals = [-self.mat[val, val] for val in range(self.mat.shape[0])]
-        max_list = [[i for i in range(-ndiag-rep[index], ndiag+1-rep[index]) if i%2 == 0] for index, ndiag in enumerate(diag_vals)]
-        max_list_sizes = [len(lst) for lst in max_list]
+        max_list = [range(-ndiag, ndiag+1) for ndiag in self.diag_vals]
+        max_list_sizes = [2*ndiag + 1 for ndiag in self.diag_vals]
         return max_list, max_list_sizes
     
     def increment(self, counter, pos, diag):
@@ -141,30 +193,23 @@ class NDQF(object):
             counter[pos] += 1
         return counter
     
-    def get_beta(self, rep):
+    def get_alpha(self):
         '''
-        Generates all possible values for beta, where beta is defined s.t.
-        alpha := rep + beta satisfies |a_i|<=-Q(e_i,e_i)
+        Generates all possible values for alpha = [a_1,...,a_b] that satisfy
+        |a_i|<=-Q(e_i,e_i)
         '''
-        rep = np.array(rep)[0].tolist() # convert rep (numpy matrix) to list
-        max_list, max_list_sizes = self.max_bounds(rep)
+        max_list, max_list_sizes = self.max_bounds()
         max_list_sizes2 = [val-1 for val in max_list_sizes]
         length = self.mat.shape[0]        
-        counter = [0 for i in range(length)] # which beta coords to pick        
+        counter = [0 for i in range(length)] # which alpha coords to pick        
         for i in range(reduce(lambda x, y: x*y, max_list_sizes)):
-            beta = [max_list[i][counter[i]] for i in range(length)]
-            yield beta
+            alpha = [max_list[i][counter[i]] for i in range(length)]
+            yield alpha
             # update counter
             if counter != max_list_sizes2:
                 self.increment(counter, 0, max_list_sizes)
             else:
                 return
-    
-    def get_equiv_class(self):
-        '''
-        Generates elements in equivalence class
-        '''
-        pass
     
     
 class Hom_Group(object):
@@ -174,7 +219,7 @@ class Hom_Group(object):
         '''Creates a new homology group using the list of invariant factors
         on the diagonal.'''
         invariant_factors = np.diagonal(diagonal)
-        matters = nontrivial(invariant_factors)
+        matters = nontrivial(invariant_factors) # all non-1 invariant factors
         # structure = [n1, n2, .. nk] if H1(Y) ~ ZZ/n1 x ZZ/n2 x ... ZZ/nk
         self.structure = matters.tolist()
         group_rank = len(self.structure)
@@ -185,11 +230,9 @@ class Hom_Group(object):
         self.gen = [rows[i] for i in range(start, vect_dim)] # generating vectors
         self.rel = [rows[i] for i in range(0, start)] # relation vectors ( = 0 )
         return
-
-    def __repr__(self):
-        ''' Shows the structure of the group, as well as generators and
-        relations.'''
-        ret = []
+    
+    def struct(self):
+        '''Return structure of H_1(Y) as string'''
         def rep(i):
             '''The string representation of Z/i'''
             i = i if i > 0 else -i
@@ -204,6 +247,13 @@ class Hom_Group(object):
             structure = reduce(lambda s, z: s + 'x' + z, reps)
         else:
             structure = "1"
+        return structure
+
+    def __repr__(self):
+        ''' Shows the structure of the group, as well as generators and
+        relations.'''
+        ret = []
+        structure = self.struct()
         ret.append("Structure decomposition: H_1(Y) ~ " + structure + '.')
         ret.append("Generating vectors in order of invariant factor:")
         i = 0
@@ -256,5 +306,7 @@ b=NDQF([[-2,  0,  0,  1,  1],
  [ 0, -1, -2, -1, -1],
  [ 1, -1, -1, -3, -2],
  [ 1, -1, -1, -2, -3]])
-
 a=NDQF([[-2, -1, -1],[-1, -2, -1],[-1, -1, -2]])
+c=NDQF([[-3, -1, -1,  0],[-1, -4, -2,  0],[-1, -2, -4,  1],[ 0,  0,  1, -3]])
+ex=NDQF([[-5,2],[2,-4]])
+ex2=NDQF([[-5,-2],[-2,-4]])
