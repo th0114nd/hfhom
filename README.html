@@ -3,7 +3,7 @@
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
---> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
+--> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
 <p>Specifically, the package computes the correction terms for the following:</p>
 <ul>
 <li>Double branched cover of an alternating link (input is an alternating link)
@@ -17,6 +17,7 @@ $ pandoc -f markdown -t html README.md -o README.html
 <li>Input type 2: Negative-definite graph with an most two bad vertices</li>
 </ul></li>
 </ul>
+<p>This program was written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013 with mentor <a href="http://www.its.caltech.edu/~yini/">Dr. Yi Ni</a>. Funding was also provided by Richter Memorial Funds.</p>
 <h2 id="installation">Installation</h2>
 <p>Installation the easy way requires <code>pip</code> first, with instructions <a href="http://www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
 <p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
@@ -25,7 +26,7 @@ $ pandoc -f markdown -t html README.md -o README.html
 <p>To test the installation, run</p>
 <p><code>hfhom</code></p>
 <p>For a successful installation, the program should start running.</p>
-<p>If for some reason you cannot install it properly (eg. Windows), you can download all the files in the directory <code>corrterm</code> and run <code>gui.py</code> with python. You will also have to install the necessary python modules, if you do not have them installed already.</p>
+<p>If for some reason you cannot install it properly, you can download all the files in the directory <code>corrterm</code> and run <code>gui.py</code> with python. You will also have to install the necessary python modules, if you do not have them installed already.</p>
 <p>To uninstall, run</p>
 <p><code>[sudo] pip uninstall hfhom</code></p>
 <h2 id="using-the-gui">Using the GUI</h2>

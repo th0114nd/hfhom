@@ -6,8 +6,7 @@ Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
 -->
 A package to compute the Heergaard Floer correction terms for some classes of 
-3-manifolds. Written for a [Caltech SURF project](http://www.surf.caltech.edu/)
-summer 2013. Information and examples concerning the correction terms may be
+3-manifolds. Information and examples concerning the correction terms may be
 found in a paper by P. Ozsvath, Z. Szabo,
 [On the Heegaard Floer homology of branched double-covers](http://www.sciencedirect.com/science/article/pii/S0001870804001690).
 
@@ -22,6 +21,11 @@ Specifically, the package computes the correction terms for the following:
     + Input type 1: Seifert fibered rational homology sphere data 
       {e; (p1, q1),...,(pr, qr)}
     + Input type 2: Negative-definite graph with an most two bad vertices
+
+This program was written for a 
+[Caltech SURF project](http://www.surf.caltech.edu/)
+summer 2013 with mentor [Dr. Yi Ni](http://www.its.caltech.edu/~yini/).
+Funding was also provided by Richter Memorial Funds.
 
 Installation
 ------------
@@ -41,10 +45,10 @@ To test the installation, run
 
 For a successful installation, the program should start running.
 
-If for some reason you cannot install it properly (eg. Windows), you can
-download all the files in the directory `corrterm` and run `gui.py` with
-python. You will also have to install the necessary python modules, if you
-do not have them installed already.
+If for some reason you cannot install it properly, you can download all the
+files in the directory `corrterm` and run `gui.py` with python. You will also
+have to install the necessary python modules, if you do not have them installed
+already.
 
 To uninstall, run
 
