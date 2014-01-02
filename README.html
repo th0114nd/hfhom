@@ -3,7 +3,7 @@
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
---> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
+--> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
 <p>Specifically, the package computes the correction terms for the following:</p>
 <ul>
 <li>Double branched cover of an alternating link (input is an alternating link)
@@ -17,16 +17,18 @@ $ pandoc -f markdown -t html README.md -o README.html
 <li>Input type 2: Negative-definite graph with an most two bad vertices</li>
 </ul></li>
 </ul>
-<h2 id="alink">alink</h2>
-<p>Used to compute the terms for a double branched cover of an alternating link, with input supplied in a .lnk file. A .lnk file can be acquired using the SnapPea application, by issuing the command 'Manifold()' to the SnapPea command line. This opens a link editor, and use <code>PLink-&gt;Make Alternating</code> to ensure an alternating link. <code>File-&gt;Save As</code> will create a .lnk file at a location of your choosing. To compute the terms at the level of the operating system's shell, on a UNIX system run</p>
-<pre><code>$ ./alink YOUR_LINK_FILE.lnk</code></pre>
-<p>which will return a plaintext list of correction terms. To redirect the list into a file called <code>out.txt</code>, issue</p>
-<pre><code>$ ./alink YOUR_LINK.lnk &gt; out.txt</code></pre>
-<p>To use the correction terms inside a Python program, import hfhom.alink</p>
-<pre><code>...
-&gt;&gt;&gt; with open(&#39;YOUR_KNOT_FILE.lnk&#39;) as link:
-&gt;&gt;&gt;     corr_terms = hfhom.alink.ct_from_link(link) 
-&gt;&gt;&gt; print corr_terms</code></pre>
+<p>This program was written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013 with mentor <a href="http://www.its.caltech.edu/~yini/">Dr. Yi Ni</a>. Funding was also provided by Richter Memorial Funds.</p>
+<h2 id="installation">Installation</h2>
+<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="http://www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
+<p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
+<p>before trying to install <code>hfhom</code>. To install this program, run</p>
+<p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code></p>
+<p>To test the installation, run</p>
+<p><code>hfhom</code></p>
+<p>For a successful installation, the program should start running.</p>
+<p>If for some reason you cannot install it properly, you can download all the files in the directory <code>corrterm</code> and run <code>gui.py</code> with python. You will also have to install the necessary python modules, if you do not have them installed already.</p>
+<p>To uninstall, run</p>
+<p><code>[sudo] pip uninstall hfhom</code></p>
 <h2 id="using-the-gui">Using the GUI</h2>
 <p>The GUI has two tabs, one for computing the corrections terms of the double branched cover of an alternating link, and one for computing the correction terms of a plumbed 3-manifold. Input for the double branched cover of an alternating link is an alternating link from either <a href="http://knotilus.math.uwo.ca/">Knotilus</a> or <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink</a>. Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered rational homology sphere or a negative definite weighted graph with at most two bad vertices.</p>
 <div class="figure">
@@ -70,14 +72,36 @@ $ pandoc -f markdown -t html README.md -o README.html
 </ul></li>
 </ul>
 <h3 id="options">Options</h3>
-<p>Under the <code>Options</code> menu, there are two global options, <code>Show quadratic form</code> and <code>Condense correction terms</code>. Additionally, there are the submenus <code>Double branched cover</code> and <code>Plumbed 3-manifolds</code>, which only affect those input methods, respectively. If an option starts with &quot;Print&quot;, it will print additional information in the correction terms window. If an option starts with &quot;Show&quot;, it will open a new window.</p>
+<p>Under the <code>Options</code> menu, there are three global options, <code>Print quadratic form</code>, <code>Print H_1(Y) type', and</code>Condense correction terms<code>. Additionally, there are the submenus</code>Double branched cover<code>and</code>Plumbed 3-manifolds`, which only affect those input methods, respectively. If an option starts with &quot;Print&quot;, it will print additional information in the correction terms window. If an option starts with &quot;Show&quot;, it will open a new window.</p>
 <ul>
-<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code>, <code>graph commands</code>, and <code>Seifert data</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line. For the <code>quadratic form</code> option with Seifert data, if the manifold orientation is reversed, the quadratic form will be for the altered (reversed) manifold, rather than the original.</p></li>
+<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code>, <code>graph commands</code>, and <code>Seifert data</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line. For the <code>quadratic form</code> option with Seifert data, if the manifold orientation is reversed, the quadratic form will be for the altered (reversed) manifold, rather than the original. The option `Print H_1(Y) type' is checked by default; it prints the group structure of the first homology group H_1(Y).</p></li>
 <li><p><strong>Double branched cover submenu</strong><br />If the <code>Show original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. It may not work on Windows. If opening a saved Knotilus file, this option will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
 <li><p><strong>Plumbed 3-manifold submenu</strong><br />If the <code>Show weighted graph</code> option is checked, the graph will be drawn in a separate window using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. The option <code>Print modified Seifert data</code> only affects Seifert data input.</p></li>
 </ul>
-<h2 id="smith">smith</h2>
-<p>The Smith module computes the Smith Normal Form of a numpy matrix, as well as the unimodular accompanying factors. The algorithm is an implementation of that of <a href="http://itee.uq.edu.au/~havas/1997hm.pdf">Havas and Majewski</a>. Plans are made to extend the package to more classes of Manifolds at present.</p>
+<h2 id="command-line-operations">Command line operations</h2>
+<h3 id="graph_quad">graph_quad</h3>
+<p>This module handles double-branched covers and outputs the associated quadratic form.</p>
+<p>Usage:</p>
+<p><code>$ python graph_quad.py [-s] archive_num</code></p>
+<p><code>$ python graph_quad.py -f archive_num.txt</code></p>
+<p><code>$ python graph_quad.py -p [filename]</code></p>
+<p>The first two usages are for Knotilus. Use -s to save the plaintext file in the current directory. Use -f to indicate loading the file 'archive_num.txt'. The printed time to 'anneal' has to do with how long the Knotilus server takes to render the link and create the plaintext file. The last usage is for PLink. Optional argument 'filename' indicates loading 'filename'. No optional argument starts the PLink editor.</p>
+<h3 id="ndqf">ndqf</h3>
+<p>The ndqf (negative definite quadratic form) module takes the negative definite quadratic form (as a matrix) and computes the correction terms. It does NOT check that the matrix you enter is negative definite. (The program itself currently checks this in the modules that create the matrix instead.)</p>
+<p>Usage:</p>
+<pre><code>&gt;&gt;&gt; x = NDQF([[-5, -2], [-2, -4]])
+&gt;&gt;&gt; x.correction_terms()
+Computed from quadratic form in 0.04 seconds
+&#39;7/16, 1/4, -9/16, 0, -1/16, -3/4, -1/16, 0, -9/16, 1/4, 7/16, 0, -17/16,
+-3/4, -17/16, 0&#39;
+&gt;&gt;&gt; x.group
+Structure decomposition: H_1(Y) ~ Z/16Z.
+Generating vectors in order of invariant factor:
+[[0 1]] has order 16.
+Relation vectors (congruent to 0):
+[[ 1 -6]]</code></pre>
+<h3 id="smith">smith</h3>
+<p>The Smith module computes the Smith Normal Form of a numpy matrix, as well as the unimodular accompanying factors. The algorithm is an implementation of that of <a href="http://itee.uq.edu.au/~havas/1997hm.pdf">Havas and Majewski</a>.</p>
 <p>Usage:</p>
 <pre><code>&gt;&gt;&gt; x = np.matrix([[-5, -2], [-2, -4]])
 &gt;&gt;&gt; d, (u, v) = smith_normal_form(x)

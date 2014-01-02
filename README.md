@@ -6,8 +6,7 @@ Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
 -->
 A package to compute the Heergaard Floer correction terms for some classes of 
-3-manifolds. Written for a [Caltech SURF project](http://www.surf.caltech.edu/)
-summer 2013. Information and examples concerning the correction terms may be
+3-manifolds. Information and examples concerning the correction terms may be
 found in a paper by P. Ozsvath, Z. Szabo,
 [On the Heegaard Floer homology of branched double-covers](http://www.sciencedirect.com/science/article/pii/S0001870804001690).
 
@@ -23,30 +22,37 @@ Specifically, the package computes the correction terms for the following:
       {e; (p1, q1),...,(pr, qr)}
     + Input type 2: Negative-definite graph with an most two bad vertices
 
-alink
------
-Used to compute the terms for a double branched cover of an alternating link,
-with input supplied in a .lnk file.  A .lnk file can be acquired using the
-SnapPea application, by issuing the command 'Manifold()' to the SnapPea command
-line.  This opens a link editor, and use ```PLink->Make Alternating``` to
-ensure an alternating link. ```File->Save As``` will create a .lnk file at a 
-location of your choosing. To compute the terms at the level of the operating 
-system's shell, on a UNIX system run 
+This program was written for a 
+[Caltech SURF project](http://www.surf.caltech.edu/)
+summer 2013 with mentor [Dr. Yi Ni](http://www.its.caltech.edu/~yini/).
+Funding was also provided by Richter Memorial Funds.
 
-    $ ./alink YOUR_LINK_FILE.lnk
+Installation
+------------
+Installation the easy way requires `pip` first, with instructions 
+[here](http://www.pip-installer.org/en/latest/installing.html). If you do not
+have an installation of `plink` installed that python can find, run
 
-which will return a plaintext list of correction terms. 
-To redirect the list into a file called `out.txt`, issue 
+`pip install -f http://math.uic.edu/t3m/plink plink`
 
-    $ ./alink YOUR_LINK.lnk > out.txt
+before trying to install `hfhom`. To install this program, run
 
-To use the correction terms inside a Python program, 
-    import hfhom.alink
+`[sudo] pip install git+git://github.com/th0114nd/hfhom.git`
 
-    ...
-    >>> with open('YOUR_KNOT_FILE.lnk') as link:
-    >>>     corr_terms = hfhom.alink.ct_from_link(link) 
-    >>> print corr_terms
+To test the installation, run
+
+`hfhom`
+
+For a successful installation, the program should start running.
+
+If for some reason you cannot install it properly, you can download all the
+files in the directory `corrterm` and run `gui.py` with python. You will also
+have to install the necessary python modules, if you do not have them installed
+already.
+
+To uninstall, run
+
+`[sudo] pip uninstall hfhom`
 
 Using the GUI
 -----
@@ -169,12 +175,11 @@ Only the last node (highest index) can be deleted.
       up if the quadratic form is not negative definite.
 
 ### Options ###
-Under the `Options` menu, there are two global options, `Show quadratic form`
-and `Condense correction terms`. Additionally, there are the submenus
-`Double branched cover` and `Plumbed 3-manifolds`, which only affect those
-input methods, respectively. If an option starts with "Print", it will
-print additional information in the correction terms window. If an option
-starts with "Show", it will open a new window.
+Under the `Options` menu, there are three global options, `Print quadratic form`, `Print H_1(Y) type', and `Condense correction terms`. Additionally,
+there are the submenus `Double branched cover` and `Plumbed 3-manifolds`,
+which only affect those input methods, respectively. If an option starts with
+"Print", it will print additional information in the correction terms window.
+If an option starts with "Show", it will open a new window.
 
 * __Global Options__  
 If the `quadratic form` option is checked, the quadratic form
@@ -186,6 +191,8 @@ followed by a space and the correction terms, all on a single line.
 For the `quadratic form` option with Seifert data, if the manifold orientation
 is reversed, the quadratic form will be for the altered (reversed) manifold,
 rather than the original.
+The option `Print H_1(Y) type' is checked by default; it prints the group
+structure of the first homology group H_1(Y).
 
 * __Double branched cover submenu__  
 If the `Show original link` option is checked, a separate window will open to 
@@ -203,12 +210,51 @@ separate window using
 [matplotlib.pyplot](http://matplotlib.org/api/pyplot_api.html). The option 
 `Print modified Seifert data` only affects Seifert data input.
 
-smith
+Command line operations
 -----
+### graph_quad ###
+This module handles double-branched covers and outputs the associated quadratic
+form.
+
+Usage:
+
+`$ python graph_quad.py [-s] archive_num`
+
+`$ python graph_quad.py -f archive_num.txt`
+
+`$ python graph_quad.py -p [filename]`
+
+The first two usages are for Knotilus. Use -s to save the plaintext file in the
+current directory. Use -f to indicate loading the file 'archive_num.txt'. 
+The printed time to 'anneal' has to do with how long the Knotilus server takes
+to render the link and create the plaintext file.
+The last usage is for PLink. Optional argument 'filename' indicates loading
+'filename'. No optional argument starts the PLink editor.
+
+### ndqf ###
+The ndqf (negative definite quadratic form) module takes the negative definite
+quadratic form (as a matrix) and computes the correction terms. It does NOT
+check that the matrix you enter is negative definite. (The program itself
+currently checks this in the modules that create the matrix instead.)
+
+Usage:
+
+    >>> x = NDQF([[-5, -2], [-2, -4]])
+    >>> x.correction_terms()
+    Computed from quadratic form in 0.04 seconds
+    '7/16, 1/4, -9/16, 0, -1/16, -3/4, -1/16, 0, -9/16, 1/4, 7/16, 0, -17/16,
+    -3/4, -17/16, 0'
+    >>> x.group
+    Structure decomposition: H_1(Y) ~ Z/16Z.
+    Generating vectors in order of invariant factor:
+    [[0 1]] has order 16.
+    Relation vectors (congruent to 0):
+    [[ 1 -6]]
+
+### smith ###
 The Smith module computes the Smith Normal Form of a numpy matrix, as well as 
 the unimodular accompanying factors. The algorithm is an implementation of
 that of [Havas and Majewski](http://itee.uq.edu.au/~havas/1997hm.pdf). 
-Plans are made to extend the package to more classes of Manifolds at present.
 
 Usage:
 

@@ -36,9 +36,10 @@ class GraphPopup(Frame):
     Saving will open a window. (really meant to be used in GUI mode; non-GUI
     mode is for running tests)
     '''
-    def __init__(self, master, graph=None, condense=None, show_quad=None, 
-                 show_weighted=None, gui=True):
+    def __init__(self, master, graph=None, condense=None, show_hom=None,
+                 show_quad=None, show_weighted=None, gui=True):
         self.condense = condense # variable
+        self.show_hom = show_hom
         self.show_quad = show_quad # variable
         self.show_weighted = show_weighted # variable
         self.info = 'unknown' # inputinfo for the output window
@@ -431,14 +432,16 @@ class GraphPopup(Frame):
         quad = g_quad(self.graph, self.nodes)
         quadform = NDQF(quad)
         corr = quadform.correction_terms()
+        struct = quadform.group.struct()
         
         self.top.destroy()
         #self.master.quit()
         if not self.show_weighted.get():
             plt.close('all')            
-        OutputWindow(self.master, corr, quad, self.info,
+        OutputWindow(self.master, corr, struct, quad, self.info,
                      condense=self.condense.get(),
-                     showquad=self.show_quad.get())
+                     showquad=self.show_quad.get(),
+                     showhom=self.show_hom.get())
     
     def cancel(self):
         '''Exit program without computing correction terms.'''

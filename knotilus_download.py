@@ -139,10 +139,10 @@ def get_plaintext(archive, gui=False, max_attempts=12):
                 'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
             page = urllib2.urlopen(url_load)
             print 'Annealing...'
-            if i == 1 and gui: # show on second attempt
-                tkMessageBox.showinfo('Annealing', \
-                                  'Annealing...this may take up to 20 seconds,'\
-                                      +' depending on network connections.')
+            #if i == 1 and gui: # show on second attempt
+            #    tkMessageBox.showinfo('Annealing', \
+            #                      'Annealing...this may take up to 20 seconds,'\
+            #                          +' depending on network connections.')
             time.sleep(1.5) # 1.5 seconds seems around the best waiting time
             plaintext = get_page_source(url, gui)        
             page.close()

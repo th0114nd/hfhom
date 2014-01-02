@@ -1,3 +1,5 @@
+# FILE: ndqf.py
+
 import numpy as np
 from smith import smith_normal_form
 from fractions import Fraction, gcd
@@ -5,6 +7,8 @@ from sys import maxint
 import time # time computations
 
 #from memory_profiler import profile
+
+# TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
 
 def nontrivial(mat):
     return np.matrix.copy(mat[mat!=1])
@@ -31,14 +35,14 @@ class NDQF(object):
     
     @classmethod
     def int_matrix(cls, mat, size):
+        '''Returns int matrix that is the product of rational matrix 'mat'
+        and common denominator, along with common denominator (int).
+        Useful for speed (multiplying matrices with fractions is slow).'''
         def lcm(a, b): 
             '''least common multiple'''
             if a == 0 or b == 0:
                 return 0
-            return (a * b) / gcd(a, b)
-        '''Returns int matrix that is the product of rational matrix 'mat'
-        and common denominator, along with common denominator (int).
-        Useful for speed (multiplying matrices with fractions is slow).'''
+            return (a * b) / gcd(a, b)        
         entries = map(mat.item, xrange(size**2)) # all entries in matrix
         denoms = [entry.denominator for entry in entries]
         denom = abs(reduce(lcm, denoms))
@@ -69,7 +73,7 @@ class NDQF(object):
         self.compute_affine_space()
         self.compute_homology()
          
-    def eval(self, u, v, inverse=False):
+    def eval2(self, u, v, inverse=False):
         '''Evaluates the quadratic form on the vectors u and v. They should
         have appropriate lengths, but otherwise are autoconverted to the
         appropriate dimensions for Q(u, v) to be a scalar.'''
@@ -84,6 +88,11 @@ class NDQF(object):
                 return u * self.mat * v
         else:
             raise ValueError("Inappropriately sized vectors for eval.")
+    
+    def eval(self, u):
+        u = np.matrix(u)
+        return Fraction(1, self.int_inverse[1]) * \
+               ((u * self.int_inverse[0] * u.T)[0,0])
 
     def compute_homology(self):
         # The ith row of V corresponds to ZZ/D[i, i] in the module
@@ -99,7 +108,7 @@ class NDQF(object):
     def find_abs(self, alpha):
         '''Find the absolute value |alpha|^2 for the matrix, that is
         max_v (alpha(v))^2 / Q(v, v)'''
-        return self.eval(alpha, alpha, inverse=True)[0,0] # get rid of matrix
+        return self.eval(alpha)
 
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
@@ -108,36 +117,48 @@ class NDQF(object):
         return self.basepoint + sum(unsummed)
     
     #@profile
-    def correction_terms(self):
-        def mod2(x, y): return (x - y) % 2
+    def correction_terms_ugly(self):
         '''Finds the correction terms assoctiated to the quadratic form,
         for each of the equivalance classes it finds the maximum by 
         iterating through the relation vectors of the group.'''
+        def mod2(x, y): return (x - y) % 2        
         start_time = time.clock()
         coef_lists = lrange(self.group.structure)
         # representatives = elements of C_1(V) (np.matrix)
         representatives = map(lambda l: self.find_rep(l), coef_lists)
-        listofmaxes = [-maxint-1 for i in xrange(len(representatives))]
+        listofmaxes = [None for i in xrange(len(representatives))]
         alphagen = self.get_alpha()
         for alpha in alphagen:
             # check if a_i = Q(e_i,e_i) (mod 2)
             if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
                 class_index = self.equiv_class(alpha, representatives)
-                listofmaxes[class_index] = max(self.find_abs(alpha), \
-                                           listofmaxes[class_index])
+                magnitude = self.find_abs(alpha)
+                if magnitude > listofmaxes[class_index]:
+                    listofmaxes[class_index] = magnitude
                 # if get IndexError above, probably b/c did NOT find equiv class,
                 # so class_index too high
         # get corrterms via (|alpha|^2+b)/4
         b = self.mat.shape[0]
-        corrterms = [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+        print 'Computed from quadratic form in %g seconds' \
+              % (time.clock() - start_time)        
+        return [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+    
+    def pretty_print(self, lst):
+        '''Returns a string, created from lst with Fraction(a,b) written
+        a/b'''
         # make Fractions pretty        
         pretty_list = ['%i/%i' %(f.numerator, f.denominator) \
                        if f.denominator != 1 else str(f.numerator) \
-                       for f in corrterms]
+                       for f in lst]
         pretty_string = ', '.join(pretty_list)
-        # TODO TODO TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
-        print time.clock() - start_time, "seconds"        
         return pretty_string
+    
+    def correction_terms(self):
+        '''Finds the correction terms and returns them as strings instead of
+        Fraction objects.'''
+        corrterms = self.correction_terms_ugly()
+        return self.pretty_print(corrterms)
+
     #@profile
     def find(self, mat, rep):
         '''
@@ -151,17 +172,11 @@ class NDQF(object):
         # Same equivalence class iff mat + Ax = rep for an INTEGER matrix x
         # i.e. Ax = (rep - mat) => x = A^(-1)(rep - mat)
         # if x only has integers, then true; otherwise false
-        x = rep-mat
-        t = np.transpose(x)
-        #print self.mat_inverse, t
-        #t = self.mat_inverse * t # slow b/c fraction multiplication
-        t = self.int_inverse[0] * t
-        sol = t
-        #sol = Fraction(1, 2 * self.int_inverse[1]) * sol
-        #sol = Fraction(1, 2 * self.int_inverse[1]) * np.asarray(self.int_inverse[0] * np.transpose(rep - mat))
-        #sol =  Fraction(1,2)*np.array(self.mat_inverse * np.transpose(rep-mat))
-        for coord in sol: # check if sol has all integers
-            if coord[0] % (2 * self.int_inverse[1]) != 0:
+        # Avoids fractions (SLOW); so checks for integers using divisibility
+        sol = self.int_inverse[0] * np.transpose(rep - mat)
+        denom = 2 * self.int_inverse[1]
+        for coord in sol: # check if actual sol (divide by denom) has all ints
+            if coord[0, 0] % denom:
                 return False
         return True
 
@@ -307,13 +322,13 @@ def nlrange(index_list):
             for l_sub in nlrange(index_list[1:]):
                 yield [i_sub] + l_sub
 
-
+'''
+a=NDQF([[-2, -1, -1],[-1, -2, -1],[-1, -1, -2]])
 b=NDQF([[-2,  0,  0,  1,  1],
  [ 0,-2, -1, -1, -1],
  [ 0, -1, -2, -1, -1],
  [ 1, -1, -1, -3, -2],
  [ 1, -1, -1, -2, -3]])
-a=NDQF([[-2, -1, -1],[-1, -2, -1],[-1, -1, -2]])
 c=NDQF([[-3, -1, -1,  0],[-1, -4, -2,  0],[-1, -2, -4,  1],[ 0,  0,  1, -3]])
 ex=NDQF([[-5,2],[2,-4]])
 ex2=NDQF([[-5,-2],[-2,-4]])
@@ -321,5 +336,8 @@ ex3=NDQF([[-2,1,0,0,0],[1,-3,1,1,0],[0,1,-2,0,0],[0,1,0,-2,1],[0,0,0,1,-2]])
 os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
 
 if __name__ == '__main__':
+    os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])    
     os.correction_terms()
     #ex2.correction_terms()
+'''
+
