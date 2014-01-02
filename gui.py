@@ -46,13 +46,13 @@ class StartWindow(Frame):
         show_graph = IntVar()        
         show_quad = IntVar()
         show_hom = IntVar()
+        show_hom.set(1) # show homology structure by default
         self.condensed = IntVar()  
         show_weighted = IntVar()
         show_seifert = IntVar()
         optmenu = Menu(self.menubar, tearoff=0)
         optmenu.add_checkbutton(label='Print quadratic form',variable=show_quad)
-        optmenu.add_checkbutton(label='Print H_1(Y) type', \
-                                variable=show_hom)
+        optmenu.add_checkbutton(label='Print H_1(Y) type', variable=show_hom)
         optmenu.add_checkbutton(label='Condense correction terms', \
                                 variable=self.condensed, \
                                 command=lambda: self.disable_quad_graph(
@@ -140,7 +140,8 @@ class StartWindow(Frame):
     
     def disable_quad_graph(self, menu1, menu2, menu3):
         '''
-        Disable options to show quadratic form, graph commands, Seifert data.
+        Disable options to show quadratic form, H_1(Y) type, graph commands,
+        and Seifert data.
         '''
         if self.condensed.get():
             menu1.entryconfigure('Print quadratic form', state=DISABLED)
@@ -245,7 +246,8 @@ class KnotilusBox(object):
         struct = quadform.group.struct()
         
         if self.condense.get():
-            self.output = OutputWindow(self.master, corr, struct, quad, inputinfo, \
+            self.output = OutputWindow(self.master, corr, struct, quad,
+                                       inputinfo, showhom=self.show_hom.get(),
                                        condense=True)
         else:
             self.output = OutputWindow(self.master, corr, struct, quad, inputinfo,
@@ -361,14 +363,15 @@ class PLinkBox(object):
             quad = regions_to_quad(regions)
             quadform = NDQF(quad)
             corr = quadform.correction_terms()
-            struct = quadform.group.structure()
+            struct = quadform.group.struct()
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
             corr = '{0}' # only 1 spin structure # TODO check this
             struct = '{1}'
     
         if self.condense.get():
-            OutputWindow(self.master, corr, struct, quad, inputinfo, condense=True)
+            OutputWindow(self.master, corr, struct, quad, inputinfo, 
+                         showhom=self.show_hom.get(), condense=True)
         else:
             OutputWindow(self.master, corr, struct, quad, inputinfo, \
                          showhom=self.show_hom.get(),
@@ -442,6 +445,7 @@ class SeifertBox(object):
     
     def get_seifert(self):
         '''Parse Seifert data, output correction terms.'''
+        def negate(n): return -n
         stringdata = self.entry.get()
         try:
             if stringdata == '':
@@ -475,10 +479,11 @@ class SeifertBox(object):
         else:
             quad = s_quad_form(data)
             quadform = NDQF(quad[0])
-            corr = quadform.correction_terms()
-            struct = quadform.group.structure()
+            corr = quadform.correction_terms_ugly()
+            struct = quadform.group.struct()
             if quad[1]: # reversed orientation
-                pass # TODO reverse sign on correction terms
+                corr = map(negate, corr)
+            corr = quadform.pretty_print(corr) # make Fractions pretty
             if self.save_file.get():
                 self.save(data)
             OutputWindow(self.master, corr, struct, quad[0], data,\

@@ -431,12 +431,13 @@ class GraphPopup(Frame):
         quad = g_quad(self.graph, self.nodes)
         quadform = NDQF(quad)
         corr = quadform.correction_terms()
+        struct = quadform.group.struct()
         
         self.top.destroy()
         #self.master.quit()
         if not self.show_weighted.get():
             plt.close('all')            
-        OutputWindow(self.master, corr, quad, self.info,
+        OutputWindow(self.master, corr, struct, quad, self.info,
                      condense=self.condense.get(),
                      showquad=self.show_quad.get())
     

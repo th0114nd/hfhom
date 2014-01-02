@@ -1,10 +1,13 @@
 # Caltech SURF 2013
 # FILE: gui_output.py
-# 09.17.13
+# 01.01.14
 
 from Tkinter import *
 import tkFileDialog
 from graph_quad import NodeClass, edges_regions, maximal_subtree, graph_plot
+
+TEXTWIDTH = 62 # width of the output textbox
+# Ideally this would be editable from the gui
 
 class OutputWindow(object):
     '''Print output'''
@@ -26,9 +29,13 @@ class OutputWindow(object):
         Button(self.top, text='Close', command=self.top.destroy).grid(row=0,\
                                                                       column=2)
         
-        self.output = Text(self.top, width=62)        
+        self.output = Text(self.top, width=TEXTWIDTH)        
         if condense: # single line output
-            self.output.insert(INSERT, '%s %s' % (inputinfo, str(self.corr)))
+            if showhom:
+                self.output.insert(INSERT, '%s %s: %s' % (inputinfo, hom_struct, 
+                                                     str(self.corr)))
+            else:
+                self.output.insert(INSERT, '%s %s' %(inputinfo, str(self.corr)))
         else:
             self.output.insert(INSERT, '%s\n\nCorrection terms:\n%s\n' \
                                % (inputinfo, str(self.corr)))
