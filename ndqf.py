@@ -90,8 +90,10 @@ class NDQF(object):
             raise ValueError("Inappropriately sized vectors for eval.")
     
     def eval(self, u):
+        '''Returns value of |u|^2 = u(Q^-1)u as Fraction.'''
         u = np.matrix(u)
-        return u * self.mat_inverse * u.T
+        return Fraction(1, self.int_inverse[1]) * \
+               ((u * self.int_inverse[0] * u.T)[0,0])
 
     def compute_homology(self):
         # The ith row of V corresponds to ZZ/D[i, i] in the module
@@ -107,16 +109,15 @@ class NDQF(object):
     def find_abs(self, alpha):
         '''Find the absolute value |alpha|^2 for the matrix, that is
         max_v (alpha(v))^2 / Q(v, v)'''
-        return self.eval(alpha)[0,0]
-        #return self.eval(alpha, alpha, inverse=True)[0,0] # get rid of matrix
-
+        return self.eval(alpha)
+    
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
         Returns the vector 'basepoint + 2(c0 * gen[0] + c1 * gen[1]+ ...)'''
         unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
     
-    #@profile
+    @profile
     def correction_terms_ugly(self):
         '''Finds the correction terms assoctiated to the quadratic form,
         for each of the equivalance classes it finds the maximum by 
@@ -138,10 +139,9 @@ class NDQF(object):
                 # if get IndexError above, probably b/c did NOT find equiv class,
                 # so class_index too high
         # get corrterms via (|alpha|^2+b)/4
-        b = self.mat.shape[0]
         print 'Computed from quadratic form in %g seconds' \
               % (time.clock() - start_time)        
-        return [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+        return [Fraction(absalpha + self.b, 4) for absalpha in listofmaxes]
     
     def pretty_print(self, lst):
         '''Returns a string, created from lst with Fraction(a,b) written
@@ -339,3 +339,6 @@ if __name__ == '__main__':
     os.correction_terms()
     #ex2.correction_terms()
 '''
+if __name__ == '__main__':
+    os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
+    os.correction_terms()

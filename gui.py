@@ -199,7 +199,7 @@ class KnotilusBox(object):
                     'Archive number must have form ax-b-c, for ints a,b,c.')
         else:
             data = load(self.archive_num, filename=False, 
-                        save=self.save_file.get(), gui=True)
+                        save=self.save_file.get(), gui=True) 
             print data
             regions = data[3]
             
