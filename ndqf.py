@@ -340,4 +340,3 @@ if __name__ == '__main__':
     os.correction_terms()
     #ex2.correction_terms()
 '''
-
