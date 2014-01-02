@@ -1,7 +1,10 @@
 import numpy as np
 from smith import smith_normal_form
-from fractions import Fraction
+from fractions import Fraction, gcd
 from sys import maxint
+import time # time computations
+
+#from memory_profiler import profile
 
 def nontrivial(mat):
     return np.matrix.copy(mat[mat!=1])
@@ -24,7 +27,23 @@ class NDQF(object):
         new_left = np.rint(right.I).astype(int) # inverse of right
         new_right = np.rint(left.I).astype(int) # inverse of left
         # right, left unimodular => inverse is also an integer matrix
-        return new_left * np.vectorize(flip)(diag) * new_right 
+        return new_left * np.vectorize(flip)(diag) * new_right
+    
+    @classmethod
+    def int_matrix(cls, mat, size):
+        def lcm(a, b): 
+            '''least common multiple'''
+            if a == 0 or b == 0:
+                return 0
+            return (a * b) / gcd(a, b)
+        '''Returns int matrix that is the product of rational matrix 'mat'
+        and common denominator, along with common denominator (int).
+        Useful for speed (multiplying matrices with fractions is slow).'''
+        entries = map(mat.item, xrange(size**2)) # all entries in matrix
+        denoms = [entry.denominator for entry in entries]
+        denom = abs(reduce(lcm, denoms))
+        int_mat = (denom * np.asarray(mat)).astype(int)
+        return int_mat, denom
         
     def __init__(self, mat):
         '''Creates a quadratic form from an appropriate
@@ -41,10 +60,12 @@ class NDQF(object):
         if not symmetric(m):
             raise ValueError("Must be a symmetric array.")'''
         self.mat = m
-        self.diag_vals = [-self.mat[val, val] for val in range(self.mat.shape[0])]        
+        self.b = self.mat.shape[0]
+        self.diagonal = (-np.diagonal(self.mat)).tolist()
         d, (u, v) = smith_normal_form(m)
         self.decomp = (d, (u, v))
         self.mat_inverse = NDQF.rational_inverse(d, u, v)
+        self.int_inverse = NDQF.int_matrix(self.mat_inverse, self.b)
         self.compute_affine_space()
         self.compute_homology()
          
@@ -85,25 +106,27 @@ class NDQF(object):
         Returns the vector 'basepoint + 2(c0 * gen[0] + c1 * gen[1]+ ...)'''
         unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
-
+    
+    #@profile
     def correction_terms(self):
+        def mod2(x, y): return (x - y) % 2
         '''Finds the correction terms assoctiated to the quadratic form,
         for each of the equivalance classes it finds the maximum by 
         iterating through the relation vectors of the group.'''
+        start_time = time.clock()
         coef_lists = lrange(self.group.structure)
-        representatives = map(lambda l: self.find_rep(l), coef_lists) # elements of C_1(V)
-        listofmaxes = [-maxint-1 for i in range(len(representatives))]
+        # representatives = elements of C_1(V) (np.matrix)
+        representatives = map(lambda l: self.find_rep(l), coef_lists)
+        listofmaxes = [-maxint-1 for i in xrange(len(representatives))]
         alphagen = self.get_alpha()
         for alpha in alphagen:
-            valid = True # whether alpha is in \mathcal{C} (C1(V)=C/(2q(V)))
-            for i, coord in enumerate(alpha): # need a_i = Q(e_i,e_i) (mod 2)
-                if (self.diag_vals[i] - coord)%2 != 0: 
-                    valid = False
-                    break
-            if valid:
+            # check if a_i = Q(e_i,e_i) (mod 2)
+            if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
                 class_index = self.equiv_class(alpha, representatives)
                 listofmaxes[class_index] = max(self.find_abs(alpha), \
-                                               listofmaxes[class_index])
+                                           listofmaxes[class_index])
+                # if get IndexError above, probably b/c did NOT find equiv class,
+                # so class_index too high
         # get corrterms via (|alpha|^2+b)/4
         b = self.mat.shape[0]
         corrterms = [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
@@ -113,8 +136,9 @@ class NDQF(object):
                        for f in corrterms]
         pretty_string = ', '.join(pretty_list)
         # TODO TODO TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
+        print time.clock() - start_time, "seconds"        
         return pretty_string
-    
+    #@profile
     def find(self, mat, rep):
         '''
         Returns True if 1-line np.matrix 'mat' is in the same equivalence class
@@ -126,13 +150,21 @@ class NDQF(object):
         # A = 2*self.mat; the rows of 2*self.mat generate 2q(V)
         # Same equivalence class iff mat + Ax = rep for an INTEGER matrix x
         # i.e. Ax = (rep - mat) => x = A^(-1)(rep - mat)
-        # if x only has integers, then same; otherwise false
-        sol =  Fraction(1,2) * np.array(self.mat_inverse * np.transpose(rep - mat))
-        for coord in sol: # check all integer
-            if coord[0].denominator != 1:
+        # if x only has integers, then true; otherwise false
+        x = rep-mat
+        t = np.transpose(x)
+        #print self.mat_inverse, t
+        #t = self.mat_inverse * t # slow b/c fraction multiplication
+        t = self.int_inverse[0] * t
+        sol = t
+        #sol = Fraction(1, 2 * self.int_inverse[1]) * sol
+        #sol = Fraction(1, 2 * self.int_inverse[1]) * np.asarray(self.int_inverse[0] * np.transpose(rep - mat))
+        #sol =  Fraction(1,2)*np.array(self.mat_inverse * np.transpose(rep-mat))
+        for coord in sol: # check if sol has all integers
+            if coord[0] % (2 * self.int_inverse[1]) != 0:
                 return False
         return True
-    
+
     def equiv_class(self, mat, representatives):
         '''
         Returns the index of 'mat's equivalence class in list 'representatives'.
@@ -148,13 +180,12 @@ class NDQF(object):
         '''
         Return list of all possible values in 2q(V) (note must be even) s.t. 
         alpha := rep + val satisfies |a_i| <= -Q(e_i, e_i)
-        
-        'max_list' - a list [lst_1, lst_2, ... lst_b] where lst_i is a list of 
-                     possible values for a_i
-        'max_list_sizes' - a list of the size of each list_i in 'max_list'
         '''
-        max_list = [range(-ndiag, ndiag+1) for ndiag in self.diag_vals]
-        max_list_sizes = [2*ndiag + 1 for ndiag in self.diag_vals]
+        # max_list - list [lst_1, lst_2, ... lst_b] where lst_i is a list of 
+        #            possible values for a_i
+        # max_list_sizes - list of the size of each list_i in max_list
+        max_list = [range(-ndiag, ndiag+1) for ndiag in self.diagonal]
+        max_list_sizes = [2*ndiag + 1 for ndiag in self.diagonal]
         return max_list, max_list_sizes
     
     def increment(self, counter, pos, diag):
@@ -184,17 +215,15 @@ class NDQF(object):
         '''
         max_list, max_list_sizes = self.max_bounds()
         max_list_sizes2 = [val-1 for val in max_list_sizes]
-        length = self.mat.shape[0]        
-        counter = [0 for i in range(length)] # which alpha coords to pick        
-        for i in range(reduce(lambda x, y: x*y, max_list_sizes)):
-            alpha = [max_list[i][counter[i]] for i in range(length)]
+        counter = [0 for i in xrange(self.b)] # which alpha coords to pick        
+        for i in xrange(reduce(lambda x, y: x*y, max_list_sizes)):
+            #alpha = [-self.diagonal[i] + counter[i] for i in xrange(self.b)]
+            alpha = [max_list[i][counter[i]] for i in xrange(self.b)]
             yield alpha
             # update counter
             if counter != max_list_sizes2:
                 self.increment(counter, 0, max_list_sizes)
-            else:
-                return
-    
+
 class Hom_Group(object):
     '''A homology group.'''
     
@@ -290,3 +319,7 @@ ex=NDQF([[-5,2],[2,-4]])
 ex2=NDQF([[-5,-2],[-2,-4]])
 ex3=NDQF([[-2,1,0,0,0],[1,-3,1,1,0],[0,1,-2,0,0],[0,1,0,-2,1],[0,0,0,1,-2]])
 os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
+
+if __name__ == '__main__':
+    os.correction_terms()
+    #ex2.correction_terms()
