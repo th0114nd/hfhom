@@ -4,11 +4,27 @@ import numpy as np
 from smith import smith_normal_form
 from fractions import Fraction, gcd
 from sys import maxint
-import time # time computations
+import time # timing
+from multiprocessing import Pool, Manager
+import functools
+
 
 #from memory_profiler import profile
 
 # TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
+
+def mod2(x, y): return (x - y) % 2
+
+def f(cls, representatives, x): 
+    cls.get_all_maxes2(representatives, x)
+#listofmaxes = [None for i in xrange(75)]
+#dicofmaxes = {i:[] for i in range(75)}
+def g(cls, representatives, alphalist, lst):
+    cls.process_alpha(representatives, alphalist, lst)
+    
+def h(maxlist, alphagen):
+    for alpha in alphagen:
+        maxlist[alpha[0]] = alpha[1]
 
 def nontrivial(mat):
     return np.matrix.copy(mat[mat!=1])
@@ -92,8 +108,8 @@ class NDQF(object):
     def eval(self, u):
         '''Returns value of |u|^2 = u(Q^-1)u as Fraction.'''
         u = np.matrix(u)
-        return Fraction(1, self.int_inverse[1]) * \
-               ((u * self.int_inverse[0] * u.T)[0,0])
+        return Fraction((u * self.int_inverse[0] * u.T)[0,0], 
+                        self.int_inverse[1])
 
     def compute_homology(self):
         # The ith row of V corresponds to ZZ/D[i, i] in the module
@@ -117,32 +133,79 @@ class NDQF(object):
         unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
     
-    @profile
+    def get_all_maxes(self, representatives, alphagen, listofmaxes):
+        while 1:
+            try:
+                alpha = alphagen.next()
+                # check if a_i = Q(e_i,e_i) (mod 2)
+                if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
+                    class_index = self.equiv_class(alpha, representatives)
+                    magnitude = self.find_abs(alpha)
+                    if magnitude > listofmaxes[class_index]:
+                        listofmaxes[class_index] = magnitude
+                    # if get IndexError above, probably b/c did NOT find equiv class,
+                    # so class_index too high
+            except StopIteration:
+                break
+        return listofmaxes
+    
+    def get_all_maxes2(self, representatives, alpha):
+        global listofmaxes, dicofmaxes
+        # check if a_i = Q(e_i,e_i) (mod 2)
+        if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
+            class_index = self.equiv_class(alpha, representatives)
+            magnitude = self.find_abs(alpha)
+            dicofmaxes[class_index].append(magnitude)
+            print dicofmaxes
+            '''if magnitude > listofmaxes[class_index]:
+                listofmaxes[class_index] = magnitude
+                print listofmaxes'''
+            # if get IndexError above, probably b/c did NOT find equiv class,
+            # so class_index too high
+     
+    def process_alpha(self, representatives, alphalist, lst):
+        for alpha in alphalist:
+            if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
+                class_index = self.equiv_class(alpha, representatives)
+                magnitude = self.find_abs(alpha)
+                if magnitude > lst[class_index]:
+                    lst[class_index] = magnitude
+    
+    #@profile
     def correction_terms_ugly(self):
         '''Finds the correction terms assoctiated to the quadratic form,
         for each of the equivalance classes it finds the maximum by 
         iterating through the relation vectors of the group.'''
-        def mod2(x, y): return (x - y) % 2        
+        #global listofmaxes, dicofmaxes
+        pool = Pool() # default: processes=None => uses cpu_count()        
         start_time = time.clock()
         coef_lists = lrange(self.group.structure)
         # representatives = elements of C_1(V) (np.matrix)
         representatives = map(lambda l: self.find_rep(l), coef_lists)
-        listofmaxes = [None for i in xrange(len(representatives))]
-        alphagen = self.get_alpha()
-        for alpha in alphagen:
-            # check if a_i = Q(e_i,e_i) (mod 2)
-            if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
-                class_index = self.equiv_class(alpha, representatives)
-                magnitude = self.find_abs(alpha)
-                if magnitude > listofmaxes[class_index]:
-                    listofmaxes[class_index] = magnitude
-                # if get IndexError above, probably b/c did NOT find equiv class,
-                # so class_index too high
+        size = len(representatives)
+        #alphagen = self.get_alpha()
+        alphalist = list(self.get_alpha()) # TODO check list command??
+        #alphalist = self.get_alpha()
+        manager = Manager()
+        lst = manager.list([None for i in xrange(size)])
+        pool.apply_async(g, [self, representatives, alphalist, lst])
+        pool.close()
+        pool.join()
+        print lst
+        '''pool.map(functools.partial(f, os, representatives), alphalist)
+        pool.close()
+        pool.join()
+        #r.wait()
+        print dicofmaxes'''
         # get corrterms via (|alpha|^2+b)/4
-        print 'Computed from quadratic form in %g seconds' \
-              % (time.clock() - start_time)        
-        return [Fraction(absalpha + self.b, 4) for absalpha in listofmaxes]
+        #print 'Computed from quadratic form in %g seconds' \
+        #      % (time.clock() - start_time)
+        #listofmaxes2 = self.dicmax(dicofmaxes) 
+        return [Fraction(alpha + self.b, 4) for alpha in lst]
     
+    def dicmax(self, dic):
+        return map(lambda x: max(dic[x]), range(75))
+            
     def pretty_print(self, lst):
         '''Returns a string, created from lst with Fraction(a,b) written
         a/b'''
@@ -274,6 +337,7 @@ class Hom_Group(object):
             structure = reduce(lambda s, z: s + 'x' + z, reps)
         else:
             structure = "1"
+        print structure
         return structure
 
     def __repr__(self):
