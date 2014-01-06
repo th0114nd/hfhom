@@ -4,11 +4,22 @@ import numpy as np
 from smith import smith_normal_form
 from fractions import Fraction, gcd
 from sys import maxint
-import time # time computations
+import time # timing
+from multiprocessing import Pool, Manager
+import functools
+
+PROCESSES = None # number of processes in pool. 
+# None => default is number of cpus counted
 
 #from memory_profiler import profile
 
 # TODO order for Z/5xZ/15 is a 5x15 array i.e. 0-14, 0-14, 0-14
+
+def mod2(x, y): return (x - y) % 2
+
+def process_alpha_outside(cls, representatives, alpha, lst):
+    cls.process_alpha(representatives, lst, alpha)
+    # for multiprocessing, can't pickle unless fcn is at top level of module
 
 def nontrivial(mat):
     return np.matrix.copy(mat[mat!=1])
@@ -56,7 +67,6 @@ class NDQF(object):
             m = np.matrix(mat)
         except Exception as e:
             raise ValueError("Must be convertible to a numpy matrix.")
-            #raise e
         '''if not square(m):
             raise ValueError("Must be a square array to create a quad form.")
         if not negative_definite(m):
@@ -90,10 +100,12 @@ class NDQF(object):
             raise ValueError("Inappropriately sized vectors for eval.")
     
     def eval(self, u):
+        '''Returns value of |u|^2 = u(Q^-1)u as Fraction.'''
         u = np.matrix(u)
         return Fraction((u * self.int_inverse[0] * u.T)[0,0], self.int_inverse[1])
     
     def eval_int(self, u):
+        '''Returns value of |u|^2 = u(Q^-1)u as Fraction.'''        
         u = np.matrix(u)
         return (u * self.int_inverse[0] * u.T)[0,0]
     
@@ -110,7 +122,8 @@ class NDQF(object):
 
     def find_abs(self, alpha):
         '''Find the absolute value |alpha|^2 for the matrix, that is
-        max_v (alpha(v))^2 / Q(v, v)'''
+        max_v (alpha(v))^2 / Q(v, v). Returns as an int (numerator). 
+        Denominator is self.int_inverse[1].'''
         return self.eval_int(alpha)
 
     def find_rep(self, coef_list):
@@ -119,13 +132,21 @@ class NDQF(object):
         unsummed = [2 * c * g for (c, g) in zip(coef_list, self.group.gen)]
         return self.basepoint + sum(unsummed)
     
-    #@profile
+    def process_alpha(self, representatives, alpha, lst):
+        if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
+            class_index = self.equiv_class(alpha, representatives)
+            magnitude = self.find_abs(alpha)
+            if magnitude > lst[class_index]:
+                lst[class_index] = magnitude
+                # if get IndexError above, probably b/c did NOT find equiv class,
+                # i.e. class_index went too high           
+                
     def correction_terms_ugly(self):
         '''Finds the correction terms assoctiated to the quadratic form,
-        for each of the equivalance classes it finds the maximum by 
+        for each of the equivalance classes it finds the maximum by
         iterating through the relation vectors of the group.'''
-        def mod2(x, y): return (x - y) % 2        
-        start_time = time.clock()
+        print 'Not using multiprocessing'
+        start_time = time.time()
         coef_lists = lrange(self.group.structure)
         # representatives = elements of C_1(V) (np.matrix)
         representatives = map(lambda l: self.find_rep(l), coef_lists)
@@ -142,9 +163,36 @@ class NDQF(object):
                 # so class_index too high
         # get corrterms via (|alpha|^2+b)/4
         print 'Computed from quadratic form in %g seconds' \
-              % (time.clock() - start_time)        
-        return [Fraction(Fraction(alpha, self.int_inverse[1]) + self.b, 4) for alpha in listofmaxes]
+              % (time.time() - start_time)        
+        return [Fraction(Fraction(alpha, self.int_inverse[1]) + self.b, 4) \
+                for alpha in listofmaxes]
     
+    #@profile
+    def correction_terms_threaded(self):
+        '''Finds the correction terms assoctiated to the quadratic form,
+        for each of the equivalance classes it finds the maximum by 
+        iterating through the relation vectors of the group. 
+        
+        Uses multiprocessing.'''
+        print 'Using multiprocessing'
+        pool = Pool() # default: processes=None => uses cpu_count()
+        manager = Manager()
+        start_time = time.time()
+        coef_lists = lrange(self.group.structure)
+        # representatives = elements of C_1(V) (np.matrix)
+        representatives = map(lambda l: self.find_rep(l), coef_lists)
+        # list of maxes        
+        lst = manager.list([None for i in xrange(len(representatives))]) 
+        alphalist = list(self.get_alpha()) # cannot pickle generators
+        pool.map_async(functools.partial(process_alpha_outside, self, 
+                                         representatives, lst), alphalist)
+        pool.close()
+        pool.join() # wait for pool to finish
+        # get corrterms via (|alpha|^2+b)/4
+        print 'Computed from quadratic form in %g seconds' \
+              % (time.time() - start_time)
+        return [Fraction(alpha + self.b, 4) for alpha in lst]
+            
     def pretty_print(self, lst):
         '''Returns a string, created from lst with Fraction(a,b) written
         a/b'''
@@ -155,14 +203,18 @@ class NDQF(object):
         pretty_string = ', '.join(pretty_list)
         return pretty_string
     
-    def correction_terms(self):
+    def correction_terms(self, multiprocessing=False):
         '''Finds the correction terms and returns them as strings instead of
         Fraction objects.'''
         print 'H_1(Y) ~ %s' % self.group.struct()
-        corrterms = self.pretty_print(self.correction_terms_ugly())
+        if multiprocessing:
+            corrterms = self.correction_terms_threaded()
+        else:
+            corrterms = self.correction_terms_ugly()
+        corrterms = self.pretty_print(corrterms)
         print corrterms
         return corrterms
-
+    
     #@profile
     def find(self, mat, rep):
         '''
@@ -278,6 +330,7 @@ class Hom_Group(object):
             structure = reduce(lambda s, z: s + 'x' + z, reps)
         else:
             structure = "1"
+        print structure
         return structure
 
     def __repr__(self):
@@ -339,7 +392,8 @@ ex2=NDQF([[-5,-2],[-2,-4]])
 ex3=NDQF([[-2,1,0,0,0],[1,-3,1,1,0],[0,1,-2,0,0],[0,1,0,-2,1],[0,0,0,1,-2]])
 os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
 '''
+'''
 if __name__ == '__main__':
-    os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])    
+    os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
     os.correction_terms()
-    #ex2.correction_terms()
+'''

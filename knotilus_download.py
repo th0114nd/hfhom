@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_download.py
-# 08.23.13
+# 01.05.14
 
 import sys, time
 import cStringIO
@@ -139,6 +139,7 @@ def get_plaintext(archive, gui=False, max_attempts=12):
                 'id=1&%s&ext=-1&r=0&m=0&a=0&i=0' % gauss
             page = urllib2.urlopen(url_load)
             print 'Annealing...'
+            # pop-up box indicating Annealing
             #if i == 1 and gui: # show on second attempt
             #    tkMessageBox.showinfo('Annealing', \
             #                      'Annealing...this may take up to 20 seconds,'\
