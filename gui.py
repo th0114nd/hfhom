@@ -198,9 +198,9 @@ class KnotilusBox(object):
             tkMessageBox.showwarning('Invalid archive form.\n',\
                     'Archive number must have form ax-b-c, for ints a,b,c.')
         else:
+            print '\n%s' %self.archive_num
             data = load(self.archive_num, filename=False, 
                         save=self.save_file.get(), gui=True)
-            print data
             regions = data[3]
             
         if self.show_shaded.get():
@@ -222,6 +222,7 @@ class KnotilusBox(object):
             return
         
         try:
+            print '\n%s' %self.filename
             data = load(self.filename, filename=True)
             regions = data[3]
         except Exception as error:
@@ -338,6 +339,7 @@ class PLinkBox(object):
         if filename == '': # no file selected (canceled)
             return        
         try:
+            print '\n%s' %filename
             data = load_plink(filename, gui=True)
             object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
                                    data[5])
@@ -445,7 +447,6 @@ class SeifertBox(object):
     
     def get_seifert(self):
         '''Parse Seifert data, output correction terms.'''
-        def negate(n): return -n
         stringdata = self.entry.get()
         try:
             if stringdata == '':
@@ -482,7 +483,7 @@ class SeifertBox(object):
             corr = quadform.correction_terms_ugly()
             struct = quadform.group.struct()
             if quad[1]: # reversed orientation
-                corr = map(negate, corr)
+                corr = map(lambda n: -n, corr)
             corr = quadform.pretty_print(corr) # make Fractions pretty
             if self.save_file.get():
                 self.save(data)

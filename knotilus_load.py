@@ -251,7 +251,7 @@ def load(archive, filename=False, save=False, gui=False):
     If 'filename=True' but file 'archive' does not exist, prompts to download 
     from Knotilus. If downloading and 'save=True', will save to file. 
     '''
-    if filename == True:
+    if filename:
         while 1:
             try:
                 data = load_knotilus(archive)
@@ -289,7 +289,7 @@ def load(archive, filename=False, save=False, gui=False):
                         sys.exit(1)
                     else: # not a y or n
                         answer = raw_input('Enter y or n: ')
-    elif save == True:
+    elif save:
         download_save(archive)
         print 'Successfully saved to %s.txt' % archive
         return load(archive + '.txt', filename=True, save=False) # load file

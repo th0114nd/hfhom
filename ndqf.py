@@ -91,9 +91,12 @@ class NDQF(object):
     
     def eval(self, u):
         u = np.matrix(u)
-        return Fraction(1, self.int_inverse[1]) * \
-               ((u * self.int_inverse[0] * u.T)[0,0])
-
+        return Fraction((u * self.int_inverse[0] * u.T)[0,0], self.int_inverse[1])
+    
+    def eval_int(self, u):
+        u = np.matrix(u)
+        return (u * self.int_inverse[0] * u.T)[0,0]
+    
     def compute_homology(self):
         # The ith row of V corresponds to ZZ/D[i, i] in the module
         # ZZ^d / mat ZZ^d
@@ -108,7 +111,7 @@ class NDQF(object):
     def find_abs(self, alpha):
         '''Find the absolute value |alpha|^2 for the matrix, that is
         max_v (alpha(v))^2 / Q(v, v)'''
-        return self.eval(alpha)
+        return self.eval_int(alpha)
 
     def find_rep(self, coef_list):
         '''Finds a representative of the class for the coeficient list.
@@ -132,16 +135,15 @@ class NDQF(object):
             # check if a_i = Q(e_i,e_i) (mod 2)
             if map(mod2, self.diagonal, alpha) == [0 for i in xrange(self.b)]:
                 class_index = self.equiv_class(alpha, representatives)
-                magnitude = self.find_abs(alpha)
-                if magnitude > listofmaxes[class_index]:
-                    listofmaxes[class_index] = magnitude
+                int_magnitude = self.find_abs(alpha)
+                if int_magnitude > listofmaxes[class_index]:
+                    listofmaxes[class_index] = int_magnitude
                 # if get IndexError above, probably b/c did NOT find equiv class,
                 # so class_index too high
         # get corrterms via (|alpha|^2+b)/4
-        b = self.mat.shape[0]
         print 'Computed from quadratic form in %g seconds' \
               % (time.clock() - start_time)        
-        return [Fraction(absalpha + b, 4) for absalpha in listofmaxes]
+        return [Fraction(Fraction(alpha, self.int_inverse[1]) + self.b, 4) for alpha in listofmaxes]
     
     def pretty_print(self, lst):
         '''Returns a string, created from lst with Fraction(a,b) written
@@ -156,8 +158,10 @@ class NDQF(object):
     def correction_terms(self):
         '''Finds the correction terms and returns them as strings instead of
         Fraction objects.'''
-        corrterms = self.correction_terms_ugly()
-        return self.pretty_print(corrterms)
+        print 'H_1(Y) ~ %s' % self.group.struct()
+        corrterms = self.pretty_print(self.correction_terms_ugly())
+        print corrterms
+        return corrterms
 
     #@profile
     def find(self, mat, rep):
@@ -334,9 +338,8 @@ ex=NDQF([[-5,2],[2,-4]])
 ex2=NDQF([[-5,-2],[-2,-4]])
 ex3=NDQF([[-2,1,0,0,0],[1,-3,1,1,0],[0,1,-2,0,0],[0,1,0,-2,1],[0,0,0,1,-2]])
 os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])
-
+'''
 if __name__ == '__main__':
     os=NDQF([[-3,-2,-1,-1],[-2,-5,-2,-3],[-1,-2,-4,-3],[-1,-3,-3,-5]])    
     os.correction_terms()
     #ex2.correction_terms()
-'''
