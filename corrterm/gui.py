@@ -86,7 +86,7 @@ class StartWindow(Frame):
               font=tkFont.Font(size=12)).grid(row=0, sticky='w', columnspan=4)
         
         # Banner image
-        self.path = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.path = os.path.abspath(os.path.dirname(__file__))
         banner = True
         try: # Linux/Mac
             image = Image.open('%s/images/banner_small.png' % self.path)
@@ -339,7 +339,8 @@ class PLinkBox(object):
         # open file options
         options = {}
         options['defaultextension'] = '.txt'
-        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        options['filetypes'] = [('link files', '.lnk'), ('all files', '.*'),\
+                                ('text files', '.txt')]
         filename = tkFileDialog.askopenfilename(**options)
         if filename == '': # no file selected (canceled)
             return        

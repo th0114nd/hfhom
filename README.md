@@ -77,7 +77,7 @@ Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered
 rational homology sphere or a negative definite weighted graph with at most
 two bad vertices.
 
-![](images/gui.png)
+![](corrterm/images/gui.png)
 
 From the inputted data, a negative definite quadratic form is computed,
 and then the Heegaard Floer correction terms are computed from the quadratic
