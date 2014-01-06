@@ -276,12 +276,10 @@ def s_draw(listdata):
 def usage():
     print "usage: python %s '[e,(p1,q1),...(pr,qr)]'" % sys.argv[0]
     sys.exit(1)
-
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        usage()
-    # parse data
-    stringdata = sys.argv[1]
+    
+def parse_seifert(stringdata):
+    '''Returns the list [e,(p1,q1),...,(pr,qr)] given the string 'stringdata'
+    '[e,(p1,q1),...,(pr,qr)' '''
     stringdata = stringdata.replace(' ','') # remove all spaces
     data = []
     stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
@@ -292,4 +290,16 @@ if __name__ == '__main__':
         pairlist[0] = int(pairlist[0])
         pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
         data.append(tuple(pairlist))
-    print s_quad_form(data, gui=False)
+    return data
+
+if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        usage()
+    # parse data
+    stringdata = sys.argv[1]
+    try:
+        data = parse_seifert(stringdata)
+        print s_quad_form(data, gui=False)        
+    except:
+        print 'could not parse input'
+        usage()

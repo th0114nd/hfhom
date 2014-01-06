@@ -63,7 +63,9 @@ computation is taking too long, you can cancel the computation using Ctrl-C.
 
 On the File menu, check the option for `Use multiprocessing` to use all the
 threads on your computer instead of just one. This will speed up lengthy
-computations.
+computations and most likely max out your CPU usage (for knots/links with
+enough crossings). This is only useful if your computer has multiple cores
+or has multithreading enabled.
 
 The GUI has two tabs, one for computing the corrections terms of the double
 branched cover of an alternating link, and one for computing the correction
