@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: weighted_graph.py
-# 09.03.13
+# 01.05.13
 
 '''
 Plumbed 3-manifolds represented as negative-definite weighted forests with at 
@@ -36,11 +36,13 @@ class GraphPopup(Frame):
     Saving will open a window. (really meant to be used in GUI mode; non-GUI
     mode is for running tests)
     '''
-    def __init__(self, master, graph=None, condense=None, show_quad=None, 
-                 show_weighted=None, gui=True):
+    def __init__(self, master, graph=None, condense=False, show_hom=True, 
+                 show_quad=False, show_weighted=False,use_multi=False,gui=True):
         self.condense = condense # variable
+        self.show_hom = show_hom # variable
         self.show_quad = show_quad # variable
         self.show_weighted = show_weighted # variable
+        self.use_multi = use_multi
         self.info = 'unknown' # inputinfo for the output window
         self.nodes = []
         if graph:
@@ -430,15 +432,15 @@ class GraphPopup(Frame):
         self.save()        
         quad = g_quad(self.graph, self.nodes)
         quadform = NDQF(quad)
-        corr = quadform.correction_terms()
+        corr = quadform.correction_terms(self.use_multi.get())
         struct = quadform.group.struct()
         
         self.top.destroy()
         #self.master.quit()
         if not self.show_weighted.get():
             plt.close('all')            
-        OutputWindow(self.master, corr, struct, quad, self.info,
-                     condense=self.condense.get(),
+        OutputWindow(self.master, corr, struct, self.show_hom.get(), quad,
+                     self.info, condense=self.condense.get(),
                      showquad=self.show_quad.get())
     
     def cancel(self):

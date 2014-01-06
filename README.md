@@ -56,6 +56,15 @@ To uninstall, run
 
 Using the GUI
 -----
+It is recommended you run the GUI using a terminal or the command line, i.e.
+calling `hfhom` from the terminal. This will provide information about the
+program's current progress and intermediate results. On Linux, if the
+computation is taking too long, you can cancel the computation using Ctrl-C.
+
+On the File menu, check the option for `Use multiprocessing` to use all the
+threads on your computer instead of just one. This will speed up lengthy
+computations.
+
 The GUI has two tabs, one for computing the corrections terms of the double
 branched cover of an alternating link, and one for computing the correction
 terms of a plumbed 3-manifold. Input for the double branched cover of an

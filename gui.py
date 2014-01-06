@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 12.31.13
+# 01.05.13
 
 '''
 Main user interface for entering link data.
@@ -36,7 +36,10 @@ class StartWindow(Frame):
         # make menu
         self.menubar = Menu(master)
         # File
+        use_multi = IntVar()
+        use_multi.set(0) # do not use multiprocessing by default
         filemenu = Menu(self.menubar, tearoff=0)
+        filemenu.add_checkbutton(label='Use multiprocessing',variable=use_multi)        
         filemenu.add_command(label='Exit', command=self.master.destroy)
         self.menubar.add_cascade(label='File', menu=filemenu)
          
@@ -114,9 +117,9 @@ class StartWindow(Frame):
                                             column=0, sticky='w', columnspan=4)
         knotilus = KnotilusBox(double_cover, section_font, self.condensed,
                                show_hom, show_quad, show_link, show_shaded, 
-                               show_graph)
+                               show_graph, use_multi)
         plink = PLinkBox(double_cover, section_font, self.condensed, show_hom,
-                         show_quad, show_link, show_shaded, show_graph)
+                    show_quad, show_link, show_shaded, show_graph, use_multi)
         note.add(double_cover, text='Double branched cover')
         
         # Plumbed 3-manifolds tab
@@ -126,9 +129,9 @@ class StartWindow(Frame):
         Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0,
                                                     sticky='w', columnspan=4)
         seifert = SeifertBox(plumbing, section_font, self.condensed, show_hom,
-                             show_quad, show_weighted, show_seifert)
+                             show_quad, show_weighted, show_seifert, use_multi)
         graph = WeightedGraphBox(plumbing, section_font, self.condensed, 
-                                 show_hom, show_quad, show_weighted)
+                                 show_hom, show_quad, show_weighted, use_multi)
         note.add(plumbing, text='Plumbed 3-manifolds')
         note.grid(sticky='w', column=0, columnspan=4, pady=5)
 
@@ -161,7 +164,7 @@ class StartWindow(Frame):
 class KnotilusBox(object):
     '''Knotilus archive number'''
     def __init__(self, master, section_font, condense, show_hom, show_quad,
-                 show_link, show_shaded, show_graph):
+                 show_link, show_shaded, show_graph, use_multi):
         self.master = master
         self.show_quad = show_quad
         self.show_hom = show_hom
@@ -170,6 +173,7 @@ class KnotilusBox(object):
         self.archive_num = None
         self.show_graph = show_graph
         self.condense = condense # to show single line output
+        self.use_multi = use_multi # use multiprocessing
         
         kframe = LabelFrame(master, text='Knotilus archive', font=section_font,\
                             padx=5, pady=5)
@@ -242,7 +246,7 @@ class KnotilusBox(object):
         quad = regions_to_quad(regions)
         print quad
         quadform = NDQF(quad)
-        corr = quadform.correction_terms()
+        corr = quadform.correction_terms(self.use_multi.get())
         struct = quadform.group.struct()
         
         if self.condense.get():
@@ -276,7 +280,7 @@ class KnotilusBox(object):
 class PLinkBox(object):
     '''PLink loading'''
     def __init__(self, master, section_font, condense, show_hom, show_quad, 
-                 show_link, show_shaded, show_graph):
+                 show_link, show_shaded, show_graph, use_multi):
         self.master = master
         self.show_quad = show_quad
         self.show_hom = show_hom
@@ -284,6 +288,7 @@ class PLinkBox(object):
         self.show_shaded = show_shaded     
         self.show_graph = show_graph
         self.condense = condense
+        self.use_multi = use_multi
         
         pframe = LabelFrame(master, text='PLink/SnapPy', font=section_font, \
                             padx=5, pady=5)
@@ -362,7 +367,7 @@ class PLinkBox(object):
         if regions: # non-empty (i.e. not unknot with no crossings)
             quad = regions_to_quad(regions)
             quadform = NDQF(quad)
-            corr = quadform.correction_terms()
+            corr = quadform.correction_terms(self.use_multi.get())
             struct = quadform.group.struct()
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
@@ -420,13 +425,14 @@ class ShadedLinkWindow(object):
 class SeifertBox(object):
     '''Seifert data'''
     def __init__(self, master, section_font, condense, show_hom, show_quad, 
-                 show_weighted, show_seifert):
+                 show_weighted, show_seifert, use_multi):
         self.master = master
         self.show_quad = show_quad # intvar
         self.show_hom = show_hom
         self.show_weighted = show_weighted # intvar
         self.show_seifert = show_seifert # intvar
         self.condense = condense # intvar
+        self.use_multi = use_multi
         self.save_file = IntVar()
         
         sframe = LabelFrame(master, text='Seifert data', font=section_font, \
@@ -479,7 +485,10 @@ class SeifertBox(object):
         else:
             quad = s_quad_form(data)
             quadform = NDQF(quad[0])
-            corr = quadform.correction_terms_ugly()
+            if self.use_multi.get():
+                corr = quadform.correction_terms_threaded()
+            else:
+                corr = quadform.correction_terms_ugly()
             struct = quadform.group.struct()
             if quad[1]: # reversed orientation
                 corr = map(negate, corr)
@@ -517,12 +526,13 @@ class WeightedGraphBox(object):
     most 2 bad vertices.
     '''
     def __init__(self, master, section_font, condense, show_hom, show_quad, 
-                 show_weighted):
+                 show_weighted, use_multi):
         self.master = master
-        self.show_weighted = show_weighted # var
-        self.show_quad = show_quad # var
+        self.show_weighted = show_weighted
+        self.show_quad = show_quad
         self.show_hom = show_hom
-        self.condense = condense # var
+        self.condense = condense
+        self.use_multi = use_multi
         
         glframe = LabelFrame(master, text='Weighted graph', font=section_font,
                             padx=5, pady=5)
@@ -537,8 +547,8 @@ class WeightedGraphBox(object):
     
     def start_editor(self):
         g = nx.Graph()
-        graph = GraphPopup(self.master, g, self.condense, self.show_quad, 
-                           self.show_weighted)
+        graph = GraphPopup(self.master, g, self.condense, self.show_hom,
+                           self.show_quad, self.show_weighted, self.use_multi)
 
 class AboutWindow(object):
     def __init__(self, master):
@@ -565,6 +575,9 @@ class AboutWindow(object):
         text.insert(INSERT, about_text1)
         text.insert(INSERT, 'https://github.com/th0114nd/hfhom', 
                     hyperlink.add(self.project_link))
+        text.insert(INSERT, 'or')
+        text.insert(INSERT, 'https://github.com/panaviatornado/hfhom',
+                    hyperlink.add(self.project_link2))
         text.insert(INSERT, about_text2)
         text.configure(state=DISABLED) # read only
         text.pack()
@@ -573,6 +586,8 @@ class AboutWindow(object):
     
     def project_link(self):
         webbrowser.open('https://github.com/th0114nd/hfhom')
+    def project_link2(self):
+        webbrowser.open('https://github.com/panaviatornado/hfhom')
 
 def main():
     root = Tk()
