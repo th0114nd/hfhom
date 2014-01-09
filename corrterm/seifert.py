@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: seifert.py
-# 08.22.13
+# 01.08.14
 
 import numpy, sys
 from fractions import Fraction, gcd
@@ -280,6 +280,8 @@ def usage():
 def parse_seifert(stringdata):
     '''Returns the list [e,(p1,q1),...,(pr,qr)] given the string 'stringdata'
     '[e,(p1,q1),...,(pr,qr)' '''
+    if stringdata == '':
+        raise ValueError('empty string')
     stringdata = stringdata.replace(' ','') # remove all spaces
     data = []
     stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]

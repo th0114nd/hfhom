@@ -35,9 +35,17 @@ have an installation of `plink` installed that python can find, run
 
 `pip install -f http://math.uic.edu/t3m/plink plink`
 
-before trying to install `hfhom`. To install this program, run
+before trying to install `hfhom`. The program source code is available on
+[GitHub](https://github.com/). To install this program, find the repository
+[https://github.com/th0114nd/hfhom](https://github.com/th0114nd/hfhom) or 
+[https://github.com/panaviatornado/hfhom](https://github.com/panaviatornado/hfhom)
+that is most up to date, then run either
 
 `[sudo] pip install git+git://github.com/th0114nd/hfhom.git`
+
+or
+
+`[sudo] pip install git+git://github.com/panaviatornado/hfhom.git`
 
 To test the installation, run
 
@@ -59,7 +67,8 @@ Using the GUI
 It is recommended you run the GUI using a terminal or the command line, i.e.
 calling `hfhom` from the terminal. This will provide information about the
 program's current progress and intermediate results. On Linux, if the
-computation is taking too long, you can cancel the computation using Ctrl-C.
+computation is taking too long or using too many resources, you can cancel the
+computation using Ctrl-C. You can also close the entire GUI if it is non-responsive via Ctrl-\ (Ctrl + backslash).
 
 On the File menu, check the option for `Use multiprocessing` to use all the
 threads on your computer instead of just one. This will speed up lengthy

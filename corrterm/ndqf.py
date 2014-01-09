@@ -57,7 +57,7 @@ class NDQF(object):
         entries = map(mat.item, xrange(size**2)) # all entries in matrix
         denoms = [entry.denominator for entry in entries]
         denom = abs(reduce(lcm, denoms))
-        int_mat = (denom * np.asarray(mat)).astype(int)
+        int_mat = np.asmatrix((denom * np.asarray(mat)).astype(int))
         return int_mat, denom
         
     def __init__(self, mat):
@@ -191,8 +191,8 @@ class NDQF(object):
         # get corrterms via (|alpha|^2+b)/4
         print 'Computed from quadratic form in %g seconds' \
               % (time.time() - start_time)
-        return [Fraction(alpha + self.b, 4) for alpha in lst]
-            
+        return [Fraction(Fraction(alpha, self.int_inverse[1]) + self.b, 4) \
+                        for alpha in lst]            
     def pretty_print(self, lst):
         '''Returns a string, created from lst with Fraction(a,b) written
         a/b'''
@@ -229,10 +229,10 @@ class NDQF(object):
         # i.e. Ax = (rep - mat) => x = A^(-1)(rep - mat)
         # if x only has integers, then true; otherwise false
         # Avoids fractions (SLOW); so checks for integers using divisibility
-        sol = self.int_inverse[0] * np.transpose(rep - mat)
+        sol = self.int_inverse[0] * np.reshape(rep - mat, (-1,1))
         denom = 2 * self.int_inverse[1]
         for coord in sol: # check if actual sol (divide by denom) has all ints
-            if coord[0, 0] % denom:
+            if coord[0,0] % denom:
                 return False
         return True
 
@@ -330,7 +330,6 @@ class Hom_Group(object):
             structure = reduce(lambda s, z: s + 'x' + z, reps)
         else:
             structure = "1"
-        print structure
         return structure
 
     def __repr__(self):

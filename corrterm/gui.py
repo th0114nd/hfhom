@@ -15,7 +15,8 @@ import ImageTk, Image
 import tkHyperlinkManager
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
-from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph
+from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph, \
+     parse_seifert
 from weighted_graph import GraphPopup
 from gui_output import OutputWindow
 from ndqf import NDQF
@@ -310,22 +311,23 @@ class PLinkBox(object):
         
     def new_plink(self):
         '''Draw new link in PLink'''
+        print '\nNew PLink'
         try:
             data = load_plink(gui=True)
         except Exception as error:
-            tkMessageBox.showwarning('Loading', \
-                                     'Loading failed (%s)\n%s' \
-                                     %(filename, \
-                                       traceback.format_exc().splitlines()[-1]))
+            tkMessageBox.showwarning('PLink error', \
+                                     'Perhaps PLink is not installed properly?')
             print traceback.print_exc()
-            return            
+            return
         object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
                                        data[5])
         regions = object_data[3]
         if data[6] == '':
             path = 'PLink data not saved'
+            print path
         else:
             path = data[6]
+            print 'Saved to %s' %path
         
         if self.show_shaded.get():
             vie = (object_data[0], object_data[1], object_data[2]) 
@@ -369,9 +371,11 @@ class PLinkBox(object):
         '''Output correction terms'''
         if regions: # non-empty (i.e. not unknot with no crossings)
             quad = regions_to_quad(regions)
+            print quad
             quadform = NDQF(quad)
-            corr = quadform.correction_terms(self.use_multi.get())
             struct = quadform.group.struct()
+            print struct            
+            corr = quadform.correction_terms(self.use_multi.get())
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
             corr = '{0}' # only 1 spin structure # TODO check this
@@ -458,17 +462,7 @@ class SeifertBox(object):
         try:
             if stringdata == '':
                 raise ValueError('empty string')
-            # parse data            
-            stringdata = stringdata.replace(' ','') # remove all spaces
-            data = []
-            stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
-            stringdata = stringdata.split(',(')
-            data.append(int(stringdata[0])) # append e
-            for pair in stringdata[1:]:
-                pairlist = pair.split(',')
-                pairlist[0] = int(pairlist[0])
-                pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
-                data.append(tuple(pairlist))
+            data = parse_seifert(stringdata) # parse data
         except:
             tkMessageBox.showwarning('Failed to parse data.',
                     'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
@@ -476,7 +470,6 @@ class SeifertBox(object):
                     '= 1.')
             print traceback.print_exc()            
             return
-        #self.data = eval(self.entry.get())
         if not correct_form(data, gui=True):
             tkMessageBox.showwarning('Invalid data form.',
                     'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
@@ -485,16 +478,21 @@ class SeifertBox(object):
             print traceback.print_exc()
             return
         else:
+            print '\n%s' %data
+            # compute quadratic form and correction terms
             quad = s_quad_form(data)
+            print quad
             quadform = NDQF(quad[0])
+            struct = quadform.group.struct()
+            print struct
             if self.use_multi.get():
                 corr = quadform.correction_terms_threaded()
             else:
                 corr = quadform.correction_terms_ugly()
-            struct = quadform.group.struct()
             if quad[1]: # reversed orientation
                 corr = map(lambda n: -n, corr)
             corr = quadform.pretty_print(corr) # make Fractions pretty
+            print corr
             if self.save_file.get():
                 self.save(data)
             OutputWindow(self.master, corr, struct, quad[0], data,\

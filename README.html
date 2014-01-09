@@ -21,8 +21,10 @@ $ pandoc -f markdown -t html README.md -o README.html
 <h2 id="installation">Installation</h2>
 <p>Installation the easy way requires <code>pip</code> first, with instructions <a href="http://www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
 <p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
-<p>before trying to install <code>hfhom</code>. To install this program, run</p>
+<p>before trying to install <code>hfhom</code>. The program source code is available on <a href="https://github.com/">GitHub</a>. To install this program, find the repository <a href="https://github.com/th0114nd/hfhom">https://github.com/th0114nd/hfhom</a> or <a href="https://github.com/panaviatornado/hfhom">https://github.com/panaviatornado/hfhom</a> that is most up to date, then run either</p>
 <p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code></p>
+<p>or</p>
+<p><code>[sudo] pip install git+git://github.com/panaviatornado/hfhom.git</code></p>
 <p>To test the installation, run</p>
 <p><code>hfhom</code></p>
 <p>For a successful installation, the program should start running.</p>
@@ -30,7 +32,7 @@ $ pandoc -f markdown -t html README.md -o README.html
 <p>To uninstall, run</p>
 <p><code>[sudo] pip uninstall hfhom</code></p>
 <h2 id="using-the-gui">Using the GUI</h2>
-<p>It is recommended you run the GUI using a terminal or the command line, i.e. calling <code>hfhom</code> from the terminal. This will provide information about the program's current progress and intermediate results. On Linux, if the computation is taking too long, you can cancel the computation using Ctrl-C.</p>
+<p>It is recommended you run the GUI using a terminal or the command line, i.e. calling <code>hfhom</code> from the terminal. This will provide information about the program's current progress and intermediate results. On Linux, if the computation is taking too long or using too many resources, you can cancel the computation using Ctrl-C. You can also close the entire GUI if it is non-responsive via Ctrl- (Ctrl + backslash).</p>
 <p>On the File menu, check the option for <code>Use multiprocessing</code> to use all the threads on your computer instead of just one. This will speed up lengthy computations and most likely max out your CPU usage (for knots/links with enough crossings). This is only useful if your computer has multiple cores or has multithreading enabled.</p>
 <p>The GUI has two tabs, one for computing the corrections terms of the double branched cover of an alternating link, and one for computing the correction terms of a plumbed 3-manifold. Input for the double branched cover of an alternating link is an alternating link from either <a href="http://knotilus.math.uwo.ca/">Knotilus</a> or <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink</a>. Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered rational homology sphere or a negative definite weighted graph with at most two bad vertices.</p>
 <div class="figure">
