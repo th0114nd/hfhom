@@ -1,7 +1,6 @@
 # Caltech SURF 2013
 # FILE: knotilus_load.py
-# MENTOR: Professor Yi Ni
-# 08.02.13
+# 08.22.13
 
 '''
 This module has functions to load Knotilus data and make objects (Vertices, 
@@ -78,8 +77,9 @@ def load_knotilus(filename, string=False, gui=False):
                 print 'Aborting operation; please try again'
                 raise IOError('failed to open file')
             else: # gui -> messagebox
-                tkMessageBox.showwarning('Open file','Cannot open file %s.' %filename \
-                                         +'Aborting operation; please try again.')
+                tkMessageBox.showwarning('Open file','Cannot open file %s.' \
+                                         %filename + \
+                                        'Aborting operation; please try again.')
                 raise IOError('failed to open file')            
     else: # open string for reading like file
         knot = StringIO.StringIO(filename)
@@ -90,13 +90,13 @@ def load_knotilus(filename, string=False, gui=False):
             assert line != ''
         assert line == 'Embedding for: Component 1\n'
         
-        prev_inter_third = 0 # prev intersection's third coord, +/-1 (over/under)
+        prev_inter_third = 0 # prev intersection's 3rd coord, +/-1 (over/under)
         # will be used to check alternating
         
         prev_flex_index = -1 # prev flex point's index. This is used for 'edges'.
-        # the 1st edge of each link component has prev_flex_point -1 (the last pt),
-        # but this value will be stored as a positive number (#vertices-1), where
-        # #vertices is the number of vertices for that component.
+        # the 1st edge of each link component has prev_flex_point -1 (the last 
+        # pt), but this value will be stored as a positive number (#vertices-1),
+        # where #vertices is the number of vertices for that component.
         
         segment = -1 # keep track of segment number. increases by 2 each time
         # first segment = 0, last segment = -1 mod #segments
@@ -108,10 +108,10 @@ def load_knotilus(filename, string=False, gui=False):
         while 1:
             coords = knot.readline()
             if not coords: # EOF
-                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
+                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert-1
                 break
             if coords[0] != '(': # signifies end of link's vertices
-                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert - 1
+                edges[cur_start_index][1][0] = cur_start_index + cur_num_vert-1
                 cur_start_index += cur_num_vert # moving on to next component
                 prev_inter_third = 0 # reset alternating check
                 cur_num_vert = 0 # reset number of vertices for this component
@@ -126,8 +126,9 @@ def load_knotilus(filename, string=False, gui=False):
             if abs(third_coord) == 1: # intersection
                 
                 # check alternating link
-                if abs(prev_inter_third) == 1 and third_coord != -prev_inter_third:
-                    raise pl.DrawingError('link is not alternating')
+                if abs(prev_inter_third) == 1 and \
+                   third_coord != -prev_inter_third:
+                    raise ValueError('link is not alternating')
                 prev_inter_third = third_coord         
                 
                 # check if we've already passed this intersection
@@ -159,10 +160,11 @@ def load_knotilus(filename, string=False, gui=False):
                 #
                 # Edges (one edge per intersection occurance)
                 edges.append([index, [prev_flex_index, prev_flex_index+1]])
-                # prev_flex_index, prev_flex_index+1 give indices for flex pts of
-                # edges. At the end of a specific component, will need to modify
-                # the first edge for that component: [-1, first_flex_index] needs
-                # to be [last_flex_index, first_flex_index]
+                # prev_flex_index, prev_flex_index+1 give indices for flex pts 
+                # of edges. At the end of a specific component, will need to
+                # modify the first edge for that component: 
+                # [-1, first_flex_index] needs to be 
+                # [last_flex_index, first_flex_index]
                 segment += 2
                 
             #                 
@@ -176,13 +178,14 @@ def load_knotilus(filename, string=False, gui=False):
         knot.close()
         
         assert(len(vertices) == len(edges))
-        assert(len(vertices) == 2*len(inter)) # each intersection visited twice, 
+        assert(len(vertices) == 2*len(inter)) # each intersection visited twice,
                                             # but counted once
     except:
         if not gui: # command line
             raise ValueError('failed to parse file. perhaps a bad file?')
         else: # gui
-            tkMessageBox.showerror('Parsing file', 'Failed to parse file. Perhaps a bad file?')
+            tkMessageBox.showerror('Parsing file', 
+                                   'Failed to parse file. Perhaps a bad file?')
             raise ValueError('failed to parse file.')    
     return (vertices, edges, inter)
 
@@ -245,12 +248,10 @@ def load(archive, filename=False, save=False, gui=False):
     Loads data and returns tuple (Vertices, Intersections, Edges, Regions), 
     of all objects from the data.
     
-    FIXME: docstring
-
-    If 'filename=True' but 'archive' does not exist, prompts to download from 
-    Knotilus. 
+    If 'filename=True' but file 'archive' does not exist, prompts to download 
+    from Knotilus. If downloading and 'save=True', will save to file. 
     '''
-    if filename == True:
+    if filename:
         while 1:
             try:
                 data = load_knotilus(archive)
@@ -269,7 +270,7 @@ def load(archive, filename=False, save=False, gui=False):
                                 archive = archive + '.txt'
                             print 'Downloaded successfully to %s' % archive
                             break 
-                            # goes back to outer while loop;loads data from file                            
+                            # goes back to outer while loop;loads data from file
                         else: # not a valid archive number
                             print 'could not determine archive number'
                             while 1:
@@ -288,7 +289,7 @@ def load(archive, filename=False, save=False, gui=False):
                         sys.exit(1)
                     else: # not a y or n
                         answer = raw_input('Enter y or n: ')
-    elif save == True:
+    elif save:
         download_save(archive)
         print 'Successfully saved to %s.txt' % archive
         return load(archive + '.txt', filename=True, save=False) # load file

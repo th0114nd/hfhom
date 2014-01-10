@@ -1,7 +1,6 @@
 # SURF 2013
 # FILE: plink_classes.py
-# MENTOR: Professor Yi Ni
-# 08.01.13
+# 08.22.13
 
 
 '''
@@ -91,7 +90,7 @@ class VectorClass():
         ydir = 1 => right side up y-axis (Knotilus)
         '''
         # To find the angle, we need to first figure out whether the other 
-        # vector is on the ccw side or the cw side (i.e. the direction that gets 
+        # vector is on the ccw side or the cw side (i.e. the direction that gets
         # you to 'other' first). If it's on the ccw side, all we have to do is 
         # use the angle method. If it's on the cw side, we just take 2pi - angle
         # from the angle method.

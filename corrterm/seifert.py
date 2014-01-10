@@ -1,14 +1,15 @@
 # Caltech SURF 2013
 # FILE: seifert.py
-# 08.13.13
+# 01.08.14
 
 import numpy, sys
 from fractions import Fraction, gcd
-from graph_quad import symmetric
+from graph_quad import symmetric, is_negative_definite
 import tkMessageBox
+import networkx as nx
+import matplotlib.pyplot as plt
+from weighted_graph import g_quad
 
-class SeifertInputError(Exception):
-    pass
 
 def correct_form(listdata, gui=False):
     '''
@@ -31,13 +32,12 @@ def correct_form(listdata, gui=False):
             else:
                 suffix = 'th'  
                 
-            if not gui:
-                print 'Warning: q%i = 0, ignoring the %i%s pair' \
-                      %(index+1, index+1, suffix)
-            else: # gui
+            if gui:
                 tkMessageBox.showwarning('Warning',\
-                                         'Warning: q%i=0, ignoring the %i%s pair'\
-                                         %(index+1, index+1, suffix))
+                                    'Warning: q%i=0, ignoring the %i%s pair'\
+                                    %(index+1, index+1, suffix))                
+            print 'Warning: q%i = 0, ignoring the %i%s pair' \
+                  %(index+1, index+1, suffix)
         else:
             if len(pair) != 2 or type(pair[0]) != int or type(pair[1]) != int:
                 return False
@@ -75,15 +75,18 @@ def invariants(listdata):
             number += Fraction(qi, pi)
     return multiset, number
 
-def alter_data(listdata):
+def alter_data(listdata, gui=True):
     '''
     Returns a tuple (list new_data, bool negate).
     
     new_data is data [e, (p1,q1), (p2,q2),...,(pr,qr)] for the Seifert fibered 
-    rational homology sphere such that e > 0 and -pi < qi < 0.
+    rational homology sphere such that e > 0 and -pi < qi < 0, and
+    the invariant e + sum(qi/pi) > 0 (ensures negative definite).
     
-    If the orientation is reversed, bool negate = True; if orientation need not
-    be reversed to get e > 0 and -pi < qi < 0, negate = False.
+    If the orientation is reversed to force e + sum(qi/pi) > 0, 
+    bool negate = True; if orientation is not reversed, negate = False.
+    
+    Raises ValueError if e + sum(qi/pi) = 0 (won't be negative definite).
     
     The oriented homeomorphism type of the Seifert fibered space is determined
     by the multiset {qi/pi (mod 1)} and number e + sum(qi/pi). As a result,
@@ -95,10 +98,22 @@ def alter_data(listdata):
     for some integer m. This function uses this method to get data with 
     e > 0 and -pi < qi < 0.
     '''
+    if not correct_form(listdata):
+        raise ValueError('Invalid data form.',
+                    'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
+                    'where e and the pi,qi are ints, pi > 1, and gcd(pi,qi) ' +\
+                    '= 1.')
     minus = False
-    e = listdata[0]
-    new_data = [0] # 0 is the placeholder for e
-    for pair in listdata[1:]:
+    if invariants(listdata)[1] == 0:
+        if gui:
+            tkMessageBox.showerror('Bad data', 'Bad data: e + sum(qi/pi) = 0.')
+        raise ValueError('bad data: e + sum(qi/pi) = 0')
+    if invariants(listdata)[1] < 0: # need to reverse orientation
+        listdata = negate(listdata)
+        minus = True
+    e = listdata[0]    
+    new_data = [0] # 0 is the placeholder for e, since it may be changed
+    for pair in listdata[1:]: # force -pi < qi < 0
         p, q = pair
         if q > 0:
             if p > q: # then 0 < q < p => -p < (q - p) < 0
@@ -128,13 +143,10 @@ def alter_data(listdata):
                 new_data.append((p, q))
         # if q = 0, then ignore the pair, so do nothing
     new_data[0] = e
-    if e <= 0:
-        minus = True
-        # need to get -Y. After negating, e > 0, all pi > qi > 0. To get 
-        # -pi < qi < 0, will just need to subtract pi from each qi => will be
-        # adding r to e, so new e is still > 0.
-        return alter_data(negate(new_data))[0], minus
+    # know that e > 0 since e+sum(qi/pi) > 0, and -pi < qi < 0 => qi/pi < 0,
+    # so -sum(qi/pi) > 0 => e > -sum(qi/pi) > 0
     assert invariants(listdata) == invariants(new_data)
+    assert invariants(new_data)[1] > 0
     assert e > 0
     for pair in new_data[1:]:
         assert -pair[0] < pair[1] < 0
@@ -163,7 +175,7 @@ def cont_fraction(p, q):
             break
         cont_frac.append(quotient+1) # b/c of negative sign,
                                      # p = q*(quotient+1) - remainder'
-        # don't actually care what remainder' is, but need original remainder to 
+        # don't actually care what remainder is, but need original remainder to 
         # know when to break
         
         # prepare for next iteration
@@ -171,7 +183,7 @@ def cont_fraction(p, q):
         divisor = divisor - remainder
     return cont_frac
 
-def s_quad_form(listdata):
+def s_quad_form(listdata, gui=True):
     '''
     Returns the tuple (numpy.array quadratic_form, bool minus) of the weighted 
     'star-like' tree associated with the plumbed 3-manifold given by Seifert 
@@ -196,7 +208,7 @@ def s_quad_form(listdata):
     Q(v, v) = m(v), where m is the weight of the vertex
     Q(v, w) = 1 if v, w are connected by an edge, 0 otherwise
     '''
-    new_data, minus = alter_data(listdata) # make e > 0, -pi < qi < 0
+    new_data, minus = alter_data(listdata, gui) # make e > 0, -pi < qi < 0
     tree = [new_data[0]] # list of weights in star tree [e, a0, a1,...]
     branch_lengths = [] # list of lengths of branches in star tree, not 
                         # including start node
@@ -220,31 +232,76 @@ def s_quad_form(listdata):
             quad[index,index+1] = 1 # adjacent
         cur_position += length
     symmetric(quad)
+    if not is_negative_definite(quad):
+        if gui:
+            tkMessageBox.showwarning('Quadratic form', 
+                                     'Quadratic form is not negative definite')
+        print quad
+        raise ValueError('quadratric form is not negative definite')        
+    # check get the same thing from weighted_graph.py; also checks negative def.
+    assert numpy.array_equal(quad, g_quad(make_graph(new_data), \
+                                          ['N%i' %num for num in range(size)]))
     return quad, minus
-                
+
+def make_graph(listdata):
+    '''
+    Return weighted graph (star tree) as a networkx graph.
+    
+    Weighted graph is after altering listdata.
+    '''
+    data = alter_data(listdata)[0]
+    startree = nx.Graph()
+    startree.add_node('N0', weight=-data[0]) # add root node, weight -e
+    node_num = 1
+    for pair in data[1:]:
+        branch = cont_fraction(pair[0], -pair[1])
+        for index in range(len(branch)):
+            startree.add_node('N%i'% node_num, weight=-branch[index])
+            if index == 0: # connect to root node
+                startree.add_edge('N0', 'N%i'%node_num)
+            else: # connect to the one right before it
+                startree.add_edge('N%i'%node_num, 'N%i' %(node_num -1))
+            node_num += 1
+    return startree
+    
+def s_draw(listdata):
+    '''Draw the weighted graph associated with the Seifert data 'listdata'.'''
+    startree = make_graph(listdata)
+    labels = dict((n, '%s,%s' %(n,a['weight'])) for n,a in 
+                  startree.nodes(data=True))
+    nx.draw_graphviz(startree, labels=labels, node_size=700, width=3, 
+                     alpha=0.7)    
+    plt.show()    
+               
 def usage():
-    print 'usage: python %s e p1 q1 ... pr qr' % sys.argv[0]
+    print "usage: python %s '[e,(p1,q1),...(pr,qr)]'" % sys.argv[0]
     sys.exit(1)
+    
+def parse_seifert(stringdata):
+    '''Returns the list [e,(p1,q1),...,(pr,qr)] given the string 'stringdata'
+    '[e,(p1,q1),...,(pr,qr)' '''
+    if stringdata == '':
+        raise ValueError('empty string')
+    stringdata = stringdata.replace(' ','') # remove all spaces
+    data = []
+    stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
+    stringdata = stringdata.split(',(')
+    data.append(int(stringdata[0])) # append e
+    for pair in stringdata[1:]:
+        pairlist = pair.split(',')
+        pairlist[0] = int(pairlist[0])
+        pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
+        data.append(tuple(pairlist))
+    return data
 
 if __name__ == '__main__':
-    # This is obsolete...
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         usage()
-    stringdata = sys.argv[1:]
-    if len(stringdata) % 2 != 1:
-        raise SeifertInputError, \
-              "wrong parity of arguments - must pair p's with q's"
-    listdata = [int(stringdata[0])]
-    index = 1
-    while 1:
-        if index >= len(stringdata):
-            break
-        listdata.append((int(stringdata[index]), int(stringdata[index+1])))
-        index += 2
-    print 'Inputted data:',
-    print listdata
-    if not correct_form(listdata):
-        raise SeifertInputError, \
-        '''data must be of the form 
-        [e, (p1, q1), (p2, q2), ... , (pr, qr)] with gcd(pi,qi) = 1 and pi > 1'''    
-    print s_quad_form(listdata)
+    # parse data
+    stringdata = sys.argv[1]
+    try:
+        data = parse_seifert(stringdata)
+        print s_quad_form(data, gui=False)        
+    except:
+        print 'could not parse input'
+        usage()

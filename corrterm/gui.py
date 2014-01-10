@@ -1,33 +1,28 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 08.18.13
+# 01.05.13
 
 '''
 Main user interface for entering link data.
 '''
 
-# TODO weighted plumbing tree (graph-tool?)
-# TODO open files from File menu
-
-# TODO show weighted graph for Seifert data
-
-# main/start window dimensions
-windowx = 450
-windowy = 450
-
-import traceback, os, sys
-import webbrowser
+import traceback, os, sys, webbrowser
+import plink
+import networkx as nx
 from Tkinter import *
-import tkFileDialog, tkMessageBox, ImageTk, Image, tkFont, plink, ttk
+import tkFileDialog, tkMessageBox, tkFont, ttk
+import ImageTk, Image
+import tkHyperlinkManager
 from graph_quad import *
 from knotilus_download import valid_archive_form, browser_link
-from seifert import s_quad_form, correct_form
-import networkx as nx
-from weighted_graph2 import GraphPopup
+from seifert import s_quad_form, correct_form, s_draw, alter_data, make_graph, \
+     parse_seifert
+from weighted_graph import GraphPopup
 from gui_output import OutputWindow
+from ndqf import NDQF
 
 def regions_to_quad(regions):
-    '''input list of regions, output numpy array for quadratic form'''
+    '''Return quadratic form (numpy array) given list of RegionClass objects'''
     Nodes = [NodeClass(i) for i in range(len(regions))]
     t = edges_regions(Nodes,regions)
     m = maximal_subtree(t, Nodes)
@@ -39,13 +34,13 @@ class StartWindow(Frame):
         self.master = master
         self.master.title('Hfhom')
         
-        # http://effbot.org/tkinterbook/menu.htm
         # make menu
         self.menubar = Menu(master)
         # File
+        use_multi = IntVar()
+        use_multi.set(0) # do not use multiprocessing by default
         filemenu = Menu(self.menubar, tearoff=0)
-        #filemenu.add_command(label='Open Knotilus', command=self.knotilus)
-        #filemenu.add_command(label='Open PLink', command=self.plink)
+        filemenu.add_checkbutton(label='Use multiprocessing',variable=use_multi)        
         filemenu.add_command(label='Exit', command=self.master.destroy)
         self.menubar.add_cascade(label='File', menu=filemenu)
          
@@ -53,22 +48,31 @@ class StartWindow(Frame):
         show_link = IntVar()
         show_shaded = IntVar()
         show_graph = IntVar()        
-        show_quad = IntVar()        
-        self.condensed = IntVar()        
-        
+        show_quad = IntVar()
+        show_hom = IntVar()
+        show_hom.set(1) # show homology structure by default
+        self.condensed = IntVar()  
+        show_weighted = IntVar()
+        show_seifert = IntVar()
         optmenu = Menu(self.menubar, tearoff=0)
-        optmenu.add_checkbutton(label='Show quadratic form', variable=show_quad)
+        optmenu.add_checkbutton(label='Print quadratic form',variable=show_quad)
+        optmenu.add_checkbutton(label='Print H_1(Y) type', variable=show_hom)
         optmenu.add_checkbutton(label='Condense correction terms', \
                                 variable=self.condensed, \
-                                command=lambda: self.disable_quad_graph(optmenu, dbcmenu))
+                                command=lambda: self.disable_quad_graph(
+                                    optmenu, dbcmenu, manifoldmenu))
         dbcmenu = Menu(optmenu, tearoff=0)
         dbcmenu.add_checkbutton(label='Show original link', variable=show_link)
         dbcmenu.add_checkbutton(label='Show shaded link', variable=show_shaded)
-        dbcmenu.add_checkbutton(label='Show graph commands', variable=show_graph)
+        dbcmenu.add_checkbutton(label='Print graph commands',variable=show_graph)
         optmenu.add_cascade(label='Double branched cover', menu=dbcmenu)
+        manifoldmenu = Menu(optmenu, tearoff=0)
+        manifoldmenu.add_checkbutton(label='Show weighted graph', 
+                                     variable=show_weighted)        
+        manifoldmenu.add_checkbutton(label='Print modified Seifert data', 
+                                     variable=show_seifert)
+        optmenu.add_cascade(label='Plumbed 3-manifolds', menu=manifoldmenu)
         self.menubar.add_cascade(label='Options', menu=optmenu)
-        
-        
 
         # Help
         helpmenu = Menu(self.menubar, tearoff=0)
@@ -84,103 +88,73 @@ class StartWindow(Frame):
         
         # Banner image
         self.path = os.path.abspath(os.path.dirname(__file__))
-        image = Image.open('%s/images/banner_small.png' % self.path)
-        knotimage = ImageTk.PhotoImage(image)
-        
-        bannerlabel = Label(image=knotimage)
-        bannerlabel.image = knotimage # keep reference (else garbage collected)
-        bannerlabel.grid(row=1, sticky='w', columnspan=4)
-        
-        # Subtitle
-        #Label(master, text='Actually just quadratic form...').pack(anchor='w')
-        
-
-        
+        banner = True
+        try: # Linux/Mac
+            image = Image.open('%s/images/banner_small.png' % self.path)
+        except IOError:
+            try: # Windows
+                image = Image.open('%s\images\banner_small.png' % self.path)
+            except IOError:
+                try:
+                    image = Image.open(banner_small.png)
+                except IOError:
+                    banner = False
+        if banner:
+            knotimage = ImageTk.PhotoImage(image)
+            bannerlabel = Label(image=knotimage)
+            bannerlabel.image = knotimage # keep reference (garbage collection)
+            bannerlabel.grid(row=1, sticky='w', columnspan=4)
         
         # useful stuff
-        # font for Knotilus, PLink, Seifert headers
-        section_font = tkFont.Font(size=9)
+        section_font = tkFont.Font(size=9) # font for headers
         note = ttk.Notebook(master)
-        # http://www.pyinmyeye.com/2012/08/tkinter-notebook-demo.html
-        # extend bindings to top level window allowing
-        #   CTRL+TAB - cycles thru tabs
-        #   SHIFT+CTRL+TAB - previous tab
-        #   ALT+K - select tab using mnemonic (K = underlined letter)
-        note.enable_traversal()        
+        note.enable_traversal() # ctrl+tab cycle forward, shift+ctrl+tab back
         
         # Double branched cover of an alternating link tab
         double_cover = Frame(note)
-        description1 = '\nCorrection terms for the double branched cover of an' +\
-            ' alternating link.\nInput is an alternating link.'
-        Label(double_cover, text=description1, justify=LEFT).grid(row=0, column=0, sticky='w', columnspan=4)
-        '''
-        Label(double_cover, text='Options - Show:').grid(row=1, column=0, sticky='w')
-        Checkbutton(double_cover, text='original link', variable=show_link).grid(\
-            row=1, column=1, sticky='w')
-        Checkbutton(double_cover, text='shaded link', variable=show_shaded).grid(\
-            row=1, column=2, sticky='w')
-        g = Checkbutton(double_cover, text='graph commands', variable=show_graph)        
-        g.grid(row=1, column=3, sticky='w')
-        '''
-        
-        knotilus = KnotilusBox(double_cover, section_font, self.condensed, show_quad,\
-                               show_link, show_shaded, show_graph)
-        plink = PLinkBox(double_cover, section_font, self.condensed, show_quad, \
-                         show_link, show_shaded, show_graph)
+        description1 = '\nCorrection terms for the double branched cover of ' +\
+            ' an alternating link.\nInput is an alternating link.'
+        Label(double_cover, text=description1, justify=LEFT).grid(row=0, \
+                                            column=0, sticky='w', columnspan=4)
+        knotilus = KnotilusBox(double_cover, section_font, self.condensed,
+                               show_hom, show_quad, show_link, show_shaded, 
+                               show_graph, use_multi)
+        plink = PLinkBox(double_cover, section_font, self.condensed, show_hom,
+                    show_quad, show_link, show_shaded, show_graph, use_multi)
         note.add(double_cover, text='Double branched cover')
         
         # Plumbed 3-manifolds tab
         plumbing = Frame(note)
-        description2 = '\nCorrection terms for plumbed 3-manifolds.\n' +\
-            'Input is Seifert data or a negative-definite weighted graph.'        
-        Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0, sticky='w', columnspan=4)        
-        seifert = SeifertBox(plumbing, section_font, self.condensed, show_quad)
-        graph = WeightedGraphBox(plumbing, section_font, self.condensed, show_quad)
-        note.add(plumbing, text='Plumbed 3-manifolds')        
-        
-        # Global check buttons
-        '''
-        Label(master, text='Global Options:').grid(row=2,sticky='w', pady=10)        
-        q = Checkbutton(master, text='show quadratic form', variable=show_quad)
-        q.grid(row=2, column=1, sticky='w')        
-        Checkbutton(master, text='condense correction terms', \
-                    variable=self.condensed, \
-                    command=lambda: self.disable_checkboxes([q,g])).grid(\
-                        row=2, column=2, sticky='w', columnspan=2)
-        '''
-        
+        description2 = '\nCorrection terms for certain plumbed 3-manifolds.\n'+\
+            'Input is Seifert data or a negative-definite weighted graph.'
+        Label(plumbing, text=description2, justify=LEFT).grid(row=0, column=0,
+                                                    sticky='w', columnspan=4)
+        seifert = SeifertBox(plumbing, section_font, self.condensed, show_hom,
+                             show_quad, show_weighted, show_seifert, use_multi)
+        graph = WeightedGraphBox(plumbing, section_font, self.condensed, 
+                                 show_hom, show_quad, show_weighted, use_multi)
+        note.add(plumbing, text='Plumbed 3-manifolds')
         note.grid(sticky='w', column=0, columnspan=4, pady=5)
-        
-        
-        # Banner image again        
-        bannerlabel2 = Label(image=knotimage)
-        bannerlabel2.image = knotimage # keep reference (else garbage collected)
-        bannerlabel2.grid(sticky='w', columnspan=4)  
-        
-        #canvas = Canvas(frame, bg="black", width=500, height=500)
-        #canvas.pack()        
-        #canvas.create_image(150, 150, image=knotimage)
-        #canvas.pack()
-            
-        #frame.pack()
+
+        # Banner image again
+        if banner:
+            bannerlabel2 = Label(image=knotimage)
+            bannerlabel2.image = knotimage # keep reference (garbage collection)
+            bannerlabel2.grid(sticky='w', columnspan=4)  
     
-    def disable_quad_graph(self, menu1, menu2):
-        '''Disable options for showing quadratic form and graph commands.'''
+    def disable_quad_graph(self, menu1, menu2, menu3):
+        '''
+        Disable options to show quadratic form, H_1(Y) type, graph commands,
+        and Seifert data.
+        '''
         if self.condensed.get():
-            menu1.entryconfigure('Show quadratic form', state=DISABLED)
-            menu2.entryconfigure('Show graph commands', state=DISABLED)
+            menu1.entryconfigure('Print quadratic form', state=DISABLED)
+            menu2.entryconfigure('Print graph commands', state=DISABLED)
+            menu3.entryconfigure('Print modified Seifert data', state=DISABLED)
         else:
-            menu1.entryconfigure('Show quadratic form', state=NORMAL)
-            menu2.entryconfigure('Show graph commands', state=NORMAL)
-    
-    def disable_checkboxes(self, list_disable):
-        '''Disable checkboxes in list 'list_disable'.'''
-        if self.condensed.get():
-            for box in list_disable:
-                box.configure(state=DISABLED)
-        else:
-            for box in list_disable:
-                box.configure(state=NORMAL)
+            menu1.entryconfigure('Print quadratic form', state=NORMAL)
+            menu2.entryconfigure('Print graph commands', state=NORMAL)
+            menu3.entryconfigure('Print modified Seifert data', state=NORMAL)
     
     def about(self):
         AboutWindow(self.master)
@@ -189,16 +163,18 @@ class StartWindow(Frame):
         webbrowser.open('%s/README.html' % self.path)
         
 class KnotilusBox(object):
-    '''Enter Knotilus archive number'''
-    def __init__(self, master, section_font, condense, show_quad, show_link,\
-                 show_shaded, show_graph):
+    '''Knotilus archive number'''
+    def __init__(self, master, section_font, condense, show_hom, show_quad,
+                 show_link, show_shaded, show_graph, use_multi):
         self.master = master
         self.show_quad = show_quad
+        self.show_hom = show_hom
         self.show_link = show_link
         self.show_shaded = show_shaded
         self.archive_num = None
         self.show_graph = show_graph
         self.condense = condense # to show single line output
+        self.use_multi = use_multi # use multiprocessing
         
         kframe = LabelFrame(master, text='Knotilus archive', font=section_font,\
                             padx=5, pady=5)
@@ -209,20 +185,9 @@ class KnotilusBox(object):
         self.entry = Entry(kframe, width=15)
         self.entry.grid(row=0, column=1)
         self.save_file = IntVar()
-        Checkbutton(kframe, text='Save file', variable=self.save_file).grid(row=0, column=2)
+        Checkbutton(kframe, text='Save file', variable=self.save_file).grid(\
+            row=0, column=2)
         Button(kframe, text='Go', command=self.knotilus).grid(row=0, column=3)
-        '''
-        text = Label(kframe, text='Enter starting archive number,\n' + \
-        'of the form ax-b-c, e.g. 6x-2-1')
-        text.grid(row=0, column=0)
-        self.entry = Entry(kframe, width=12)
-        self.entry.grid(row=0, column=1)
-        Label(kframe, text='#links').grid(row=0, column=2)
-        self.num_links = Entry(kframe, width=3)        
-        self.num_links.grid(row=0, column=3)
-        self.num_links.insert(0,1) # default value
-        Button(kframe, text='Go', command=self.knotilus).grid(row=0, column=4)
-        '''
         
         # load Knotilus file
         text2 = Label(kframe, text='Open saved Knotilus file')
@@ -233,14 +198,14 @@ class KnotilusBox(object):
         kframe.grid(padx=15, pady=5, sticky='w', column=0, columnspan=4)
             
     def knotilus(self):
-        # will run loading and correction terms later... TODO
         self.archive_num = self.entry.get()
         if not valid_archive_form(self.archive_num):
             tkMessageBox.showwarning('Invalid archive form.\n',\
                     'Archive number must have form ax-b-c, for ints a,b,c.')
         else:
-            data = load(self.archive_num, filename=False, save=self.save_file.get(), gui=True)
-            print data
+            print '\n%s' %self.archive_num
+            data = load(self.archive_num, filename=False, 
+                        save=self.save_file.get(), gui=True)
             regions = data[3]
             
         if self.show_shaded.get():
@@ -262,12 +227,14 @@ class KnotilusBox(object):
             return
         
         try:
+            print '\n%s' %self.filename
             data = load(self.filename, filename=True)
             regions = data[3]
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
-                                     'Loading failed - %s%s'%(type(error),\
-                                                              self.filename))
+                                     'Loading failed (%s)\n%s'
+                                     %(self.filename, \
+                                       traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
         
@@ -279,20 +246,23 @@ class KnotilusBox(object):
     
     def k_output(self, regions, vie, inputinfo):
         quad = regions_to_quad(regions)
+        print quad
+        quadform = NDQF(quad)
+        corr = quadform.correction_terms(self.use_multi.get())
+        struct = quadform.group.struct()
         
-        # TODO: ouptut correction terms not quad
         if self.condense.get():
-            self.output = OutputWindow(self.master, quad, quad, inputinfo, \
+            self.output = OutputWindow(self.master, corr, struct, quad,
+                                       inputinfo, showhom=self.show_hom.get(),
                                        condense=True)
         else:
-            self.output = OutputWindow(self.master, quad, quad, inputinfo, \
-                                       showquad=self.show_quad.get(), \
-                                       showgraph=self.show_graph.get(), \
+            self.output = OutputWindow(self.master, corr, struct, quad, inputinfo,
+                                       showhom=self.show_hom.get(),
+                                       showquad=self.show_quad.get(), 
+                                       showgraph=self.show_graph.get(), 
                                        regions=regions)
-        #self.master.wait_window(self.output.top)           
-        
         if self.show_shaded.get():
-            ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2], \
+            ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2],
                              inputinfo, flip=True) 
             # opens window to show shaded link
             # flips coordinates so drawn right side up (Tkinter y-axis reversed)
@@ -301,24 +271,26 @@ class KnotilusBox(object):
             if not self.archive_num: # loaded file
                 # attempt to use filename to load original link
                 # e.g. '6x-1-1.txt' or '6x-1-1' will work
+                # parsing on '/' will probably not work on Windows
                 archive_num = self.filename.split('/')[-1].split('.txt')[0]
-                # FIXME this is only going to work on linux...
                 if valid_archive_form(archive_num):
                     browser_link(archive_num)
                 # else ignore and do nothing
             else:
-                browser_link(self.archive_num) # open browser to original link        
+                browser_link(self.archive_num) # open browser to original link
 
 class PLinkBox(object):
     '''PLink loading'''
-    def __init__(self, master, section_font, condense, show_quad, show_link,\
-                 show_shaded, show_graph):
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
+                 show_link, show_shaded, show_graph, use_multi):
         self.master = master
         self.show_quad = show_quad
+        self.show_hom = show_hom
         self.show_link = show_link
         self.show_shaded = show_shaded     
         self.show_graph = show_graph
         self.condense = condense
+        self.use_multi = use_multi
         
         pframe = LabelFrame(master, text='PLink/SnapPy', font=section_font, \
                             padx=5, pady=5)
@@ -326,29 +298,36 @@ class PLinkBox(object):
         # new PLink
         text = Label(pframe, text='Create a new PLink/SnapPy file.')
         text.grid(row=0, column=0)
-        Button(pframe, text='Create New', command=self.new_plink).grid(row=0, \
+        Button(pframe, text='Create New', command=self.new_plink).grid(row=0,
                                                                        column=1)
         
         # load PLink file
         text2 = Label(pframe, text='Load existing PLink file')
         text2.grid(row=1, column=0)
-        Button(pframe, text='Open', command=self.p_load_file).grid(row=1, \
+        Button(pframe, text='Open', command=self.p_load_file).grid(row=1, 
                                                         column=1, sticky='W')
       
         pframe.grid(padx=15, pady=5, sticky='w', column=0, columnspan=4)
-    
         
     def new_plink(self):
-        data = load_plink(gui=True)
-        object_data = make_objects(data[0],data[1],data[2],data[3],data[4],\
-                               data[5])
+        '''Draw new link in PLink'''
+        print '\nNew PLink'
+        try:
+            data = load_plink(gui=True)
+        except Exception as error:
+            tkMessageBox.showwarning('PLink error', \
+                                     'Perhaps PLink is not installed properly?')
+            print traceback.print_exc()
+            return
+        object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
+                                       data[5])
         regions = object_data[3]
-        quad = regions_to_quad(regions)
-        
         if data[6] == '':
             path = 'PLink data not saved'
+            print path
         else:
             path = data[6]
+            print 'Saved to %s' %path
         
         if self.show_shaded.get():
             vie = (object_data[0], object_data[1], object_data[2]) 
@@ -358,25 +337,26 @@ class PLinkBox(object):
         self.p_output(regions, vie, path)
             
     def p_load_file(self):
-        '''select file to load'''
+        '''Select PLink file to load'''
         # open file options
         options = {}
         options['defaultextension'] = '.txt'
-        options['filetypes'] = [('link files', '.lnk'), ('all files', '.*'), ('text files', '.txt')]
+        options['filetypes'] = [('link files', '.lnk'), ('all files', '.*'),\
+                                ('text files', '.txt')]
         filename = tkFileDialog.askopenfilename(**options)
-        # TODO load(filename) - must also determine PLink vs. Knotilus
         if filename == '': # no file selected (canceled)
-            return
-        
+            return        
         try:
+            print '\n%s' %filename
             data = load_plink(filename, gui=True)
-            object_data = make_objects(data[0],data[1],data[2],data[3],data[4],\
+            object_data = make_objects(data[0],data[1],data[2],data[3],data[4],
                                    data[5])
             regions = object_data[3]
         except Exception as error:
             tkMessageBox.showwarning('Loading', \
-                                     'Loading failed - %s%s' \
-                                     % (type(error), filename))
+                                     'Loading failed (%s)\n%s' \
+                                     %(filename,
+                                       traceback.format_exc().splitlines()[-1]))
             print traceback.print_exc()
             return
 
@@ -388,22 +368,33 @@ class PLinkBox(object):
         self.p_output(regions, vie, filename)
     
     def p_output(self, regions, vie, inputinfo):
-        quad = regions_to_quad(regions)
+        '''Output correction terms'''
+        if regions: # non-empty (i.e. not unknot with no crossings)
+            quad = regions_to_quad(regions)
+            print quad
+            quadform = NDQF(quad)
+            struct = quadform.group.struct()
+            print struct            
+            corr = quadform.correction_terms(self.use_multi.get())
+        else: # unknot with no crossings
+            quad = 'N/A (no crossings)'
+            corr = '{0}' # only 1 spin structure # TODO check this
+            struct = '{1}'
     
         if self.condense.get():
-            OutputWindow(self.master, quad, quad, inputinfo, condense=True)
+            OutputWindow(self.master, corr, struct, quad, inputinfo, 
+                         showhom=self.show_hom.get(), condense=True)
         else:
-            OutputWindow(self.master, quad, quad, inputinfo, \
+            OutputWindow(self.master, corr, struct, quad, inputinfo, \
+                         showhom=self.show_hom.get(),
                          showquad=self.show_quad.get(), \
                          showgraph=self.show_graph.get(), regions=regions) 
 
         if self.show_shaded.get():
-            ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2], \
-                             inputinfo) # open window to show shaded link        
-        #self.master.wait_window(output.top)
-        
+            ShadedLinkWindow(self.master, regions, vie[0], vie[1], vie[2],
+                             inputinfo) # open window to show shaded link
         if self.show_link.get():
-            if inputinfo != 'PLink data not saved':
+            if inputinfo != 'PLink data not saved': # can only do if saved
                 editor = plink.LinkEditor()
                 editor.load(inputinfo)   
 
@@ -415,7 +406,7 @@ class ShadedLinkWindow(object):
         self.top = Toplevel(master)
         self.top.title('Shaded link')
         Label(self.top, text=inputinfo).grid(row=0, column=0)
-        Button(self.top, text='Close', command=self.top.destroy).grid(row=0, \
+        Button(self.top, text='Close', command=self.top.destroy).grid(row=0,
                                                                       column=1)
         self.height = 560
         c = Canvas(self.top, width=500, height=self.height, bg='gray')
@@ -439,42 +430,39 @@ class ShadedLinkWindow(object):
             edge.draw(canvas, flip=toflip, height=self.height)
 
 class SeifertBox(object):
-    '''Enter Seifert data'''
-    def __init__(self, master, section_font, condense, show_quad):
+    '''Seifert data'''
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
+                 show_weighted, show_seifert, use_multi):
         self.master = master
-        self.show_quad = show_quad
-        self.condense = condense
+        self.show_quad = show_quad # intvar
+        self.show_hom = show_hom
+        self.show_weighted = show_weighted # intvar
+        self.show_seifert = show_seifert # intvar
+        self.condense = condense # intvar
+        self.use_multi = use_multi
+        self.save_file = IntVar()
         
         sframe = LabelFrame(master, text='Seifert data', font=section_font, \
                             padx=5, pady=5)
         text = Label(sframe, text='Enter Seifert data as list\n' +\
                      '[e,(p1,q1),...,(pr,qr)]')
         text.grid(row=0, column=0)
+        Checkbutton(sframe, text='Save\ngraph', variable=self.save_file).grid(\
+            row=0, column=2)
         Button(sframe, text='Go', command=self.get_seifert).grid(row=0, \
-                                                                 column=2)
-                
-        self.entry = Entry(sframe)
+                                                                 column=3)
+        self.entry = Entry(sframe, width=17)
         self.entry.grid(row=0, column=1)
         
-        sframe.grid(padx=15, pady=10, sticky='w', column=0, columnspan=4)
+        sframe.grid(padx=15, pady=10, sticky='w', column=0, columnspan=5)
     
     def get_seifert(self):
-        # will run loading and correction terms later... TODO
+        '''Parse Seifert data, output correction terms.'''
         stringdata = self.entry.get()
         try:
             if stringdata == '':
-                raise ValueError('empty string')            
-            stringdata.replace(' ','') # remove all spaces
-            data = []
-            
-            stringdata = stringdata.split('[')[1].split(']')[0] # remove [, ]
-            stringdata = stringdata.split(',(')
-            data.append(int(stringdata[0])) # append e
-            for pair in stringdata[1:]:
-                pairlist = pair.split(',')
-                pairlist[0] = int(pairlist[0])
-                pairlist[1] = int(pairlist[1][:-1]) # ignore last ')'
-                data.append(tuple(pairlist))
+                raise ValueError('empty string')
+            data = parse_seifert(stringdata) # parse data
         except:
             tkMessageBox.showwarning('Failed to parse data.',
                     'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
@@ -482,7 +470,6 @@ class SeifertBox(object):
                     '= 1.')
             print traceback.print_exc()            
             return
-        #self.data = eval(self.entry.get())
         if not correct_form(data, gui=True):
             tkMessageBox.showwarning('Invalid data form.',
                     'Data should be [e, (p1,q1), (p2,q2), ... , (pr,qr)],' +\
@@ -491,55 +478,77 @@ class SeifertBox(object):
             print traceback.print_exc()
             return
         else:
+            print '\n%s' %data
+            # compute quadratic form and correction terms
             quad = s_quad_form(data)
-            
-            if self.condense.get():
-                OutputWindow(self.master, quad[0], quad[0], data, \
-                             condense=True)
+            print quad
+            quadform = NDQF(quad[0])
+            struct = quadform.group.struct()
+            print struct
+            if self.use_multi.get():
+                corr = quadform.correction_terms_threaded()
             else:
-                OutputWindow(self.master, quad[0], quad[0], data, \
-                             showquad=self.show_quad.get())
-            #self.master.wait_window(self.output.top)
+                corr = quadform.correction_terms_ugly()
+            if quad[1]: # reversed orientation
+                corr = map(lambda n: -n, corr)
+            corr = quadform.pretty_print(corr) # make Fractions pretty
+            print corr
+            if self.save_file.get():
+                self.save(data)
+            OutputWindow(self.master, corr, struct, quad[0], data,\
+                             showhom=self.show_hom.get(),
+                             showquad=self.show_quad.get(), 
+                             condense=self.condense.get(),
+                             showseifert=self.show_seifert.get(),
+                             seifertdata=alter_data(data))
+            if self.show_weighted.get():
+                s_draw(data)
+    
+    def save(self, data):
+        '''Save weighted star graph to file as adjacency list and node data.'''
+        options = {}
+        options['defaultextension'] = '.txt'
+        options['filetypes'] = [('all files', '.*'), ('text files', '.txt')]
+        filename = tkFileDialog.asksaveasfilename(**options)
+        
+        if filename:
+            startree = make_graph(data)
+            adjfile = open(filename, 'wb')
+            nx.write_adjlist(startree, adjfile)            
+            adjfile.write('\nDATA\n')
+            adjfile.write(str(startree.nodes(data=True)))
+            adjfile.close()
+            print 'Graph data saved to %s' % filename
 
 class WeightedGraphBox(object):
     '''
-    plumbed 3-manifold given by negative-definite weighted graph with at 
-    most 2 bad vertices
+    Plumbed 3-manifolds given by negative-definite weighted graphs with at 
+    most 2 bad vertices.
     '''
-    def __init__(self, master, section_font, condense, show_quad):
+    def __init__(self, master, section_font, condense, show_hom, show_quad, 
+                 show_weighted, use_multi):
         self.master = master
+        self.show_weighted = show_weighted
         self.show_quad = show_quad
+        self.show_hom = show_hom
         self.condense = condense
+        self.use_multi = use_multi
         
-        glframe = LabelFrame(master, text='Weighted graph', font=section_font, \
+        glframe = LabelFrame(master, text='Weighted graph', font=section_font,
                             padx=5, pady=5)
         glframe.grid(padx=15, pady=5, sticky='w', column=0, columnspan=4)
         
         # new graph
         text = Label(glframe, text='Create a new weighted graph,\n' +\
-                     'or load an existing raph file.')
+                     'or load an existing graph file.')
         text.grid(row=0, column=0)
-        Button(glframe, text='Open editor', command=self.start_editor).grid(row=0, \
-                                                                       column=1)
-        '''
-        # load graph file
-        text2 = Label(glframe, text='Load existing graph-link file')
-        text2.grid(row=1, column=0)
-        Button(glframe, text='Open', command=self.load_graph).grid(row=1, \
-                                                        column=1, sticky='W')
-        '''
+        Button(glframe, text='Open editor', command=self.start_editor).grid(
+            row=0, column=1)
     
     def start_editor(self):
         g = nx.Graph()
-        #top = Toplevel(self.master)
-        #t=Toplevel()
-        graph = GraphPopup(self.master, g, self.condense, self.show_quad)
-        #t.withdraw()
-        self.master.wait_window()
-        #top.wait_window()
-        #print graph.g_quad()
-
-
+        graph = GraphPopup(self.master, g, self.condense, self.show_hom,
+                           self.show_quad, self.show_weighted, self.use_multi)
 
 class AboutWindow(object):
     def __init__(self, master):
@@ -547,23 +556,43 @@ class AboutWindow(object):
         self.top = Toplevel(master)
         self.top.title('About')
         
-        
-        about_text = \
+        about_text1 = \
             '''
-            Hfhom Version 1.0 FIXME date
+            Hfhom Version 1.0
             
-            Hfhom was written for a Caltech SURF project in summer 2013.
+            Hfhom was written for a Caltech SURF project in 
+            summer 2013. The project is available on GitHub, at
             '''
-        
-        Message(self.top, text=about_text, width=1500, anchor='w').pack()
+        about_text2 = \
+            '''
+            
+            This project is licensed under the 
+            GNU General Public License;
+            see LICENSE.txt for more information.
+            '''
+        text = Text(self.top, width=65)
+        hyperlink = tkHyperlinkManager.HyperlinkManager(text)
+        text.insert(INSERT, about_text1)
+        text.insert(INSERT, 'https://github.com/th0114nd/hfhom', 
+                    hyperlink.add(self.project_link))
+        text.insert(INSERT, 'or')
+        text.insert(INSERT, 'https://github.com/panaviatornado/hfhom',
+                    hyperlink.add(self.project_link2))
+        text.insert(INSERT, about_text2)
+        text.configure(state=DISABLED) # read only
+        text.pack()
+        #Message(self.top, text=about_text, width=1500, anchor='w').pack()
         Button(self.top, text='Close', command=self.top.destroy).pack()
+    
+    def project_link(self):
+        webbrowser.open('https://github.com/th0114nd/hfhom')
+    def project_link2(self):
+        webbrowser.open('https://github.com/panaviatornado/hfhom')
 
 def main():
     root = Tk()
-    root.geometry(str(windowx) + 'x' + str(windowy))
-    
+    root.geometry('440x405')
     app = StartWindow(root)
-    
     root.mainloop()    
 
 if __name__ == '__main__':

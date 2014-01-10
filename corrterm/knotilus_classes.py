@@ -1,9 +1,6 @@
 # SURF 2013
 # FILE: knotilus_classes.py
-# AUTHOR: Laura Shou
-# MENTOR: Professor Yi Ni
-# 06.21.13
-
+# 08.22.13
 
 '''
 This module defines the KEdgeClass, which is very similar to the EdgeClass 

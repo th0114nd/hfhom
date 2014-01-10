@@ -1,29 +1,49 @@
-<h1 id="hfhom">hfhom</h1>
-<!---
+<h1 id="hfhomcorrterms">hfhom/corrterms</h1>
+<p><!---
 Install pandoc (http://johnmacfarlane.net/pandoc/)
 Convert to html by cd'ing into the directory with the README file, then using
 $ pandoc -f markdown -t html README.md -o README.html
--->
-<p>A package to compute Heergaard Floer correction terms for some classes of manifolds, as a SURF 2013 project.</p>
+--> A package to compute the Heergaard Floer correction terms for some classes of 3-manifolds. Information and examples concerning the correction terms may be found in a paper by P. Ozsvath, Z. Szabo, <a href="http://www.sciencedirect.com/science/article/pii/S0001870804001690">On the Heegaard Floer homology of branched double-covers</a>.</p>
+<p>Specifically, the package computes the correction terms for the following:</p>
+<ul>
+<li>Double branched cover of an alternating link (input is an alternating link)
+<ul>
+<li>Input type 1: <a href="http://knotilus.math.uwo.ca/">Knotilus database</a></li>
+<li>Input type 2: <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink drawing</a></li>
+</ul></li>
+<li>Plumbed 3-manifold constructed from a negative-definite weighted graph with with at most two bad vertices
+<ul>
+<li>Input type 1: Seifert fibered rational homology sphere data {e; (p1, q1),...,(pr, qr)}</li>
+<li>Input type 2: Negative-definite graph with an most two bad vertices</li>
+</ul></li>
+</ul>
+<p>This program was written for a <a href="http://www.surf.caltech.edu/">Caltech SURF project</a> summer 2013 with mentor <a href="http://www.its.caltech.edu/~yini/">Dr. Yi Ni</a>. Funding was also provided by Richter Memorial Funds.</p>
 <h2 id="installation">Installation</h2>
-<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
+<p>Installation the easy way requires <code>pip</code> first, with instructions <a href="http://www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
 <p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
-<p>before trying to install <code>hfhom</code>. To install this program, run</p>
+<p>before trying to install <code>hfhom</code>. The program source code is available on <a href="https://github.com/">GitHub</a>. To install this program, find the repository <a href="https://github.com/th0114nd/hfhom">https://github.com/th0114nd/hfhom</a> or <a href="https://github.com/panaviatornado/hfhom">https://github.com/panaviatornado/hfhom</a> that is most up to date, then run either</p>
 <p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code></p>
+<p>or</p>
+<p><code>[sudo] pip install git+git://github.com/panaviatornado/hfhom.git</code></p>
 <p>To test the installation, run</p>
 <p><code>hfhom</code></p>
 <p>For a successful installation, the program should start running.</p>
+<p>If for some reason you cannot install it properly, you can download all the files in the directory <code>corrterm</code> and run <code>gui.py</code> with python. You will also have to install the necessary python modules, if you do not have them installed already.</p>
+<p>To uninstall, run</p>
+<p><code>[sudo] pip uninstall hfhom</code></p>
 <h2 id="using-the-gui">Using the GUI</h2>
+<p>It is recommended you run the GUI using a terminal or the command line, i.e. calling <code>hfhom</code> from the terminal. This will provide information about the program's current progress and intermediate results. On Linux, if the computation is taking too long or using too many resources, you can cancel the computation using Ctrl-C. You can also close the entire GUI if it is non-responsive via Ctrl- (Ctrl + backslash).</p>
+<p>On the File menu, check the option for <code>Use multiprocessing</code> to use all the threads on your computer instead of just one. This will speed up lengthy computations and most likely max out your CPU usage (for knots/links with enough crossings). This is only useful if your computer has multiple cores or has multithreading enabled.</p>
 <p>The GUI has two tabs, one for computing the corrections terms of the double branched cover of an alternating link, and one for computing the correction terms of a plumbed 3-manifold. Input for the double branched cover of an alternating link is an alternating link from either <a href="http://knotilus.math.uwo.ca/">Knotilus</a> or <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">Plink</a>. Input for a plumbed 3-manifold is either Seifert data for a Seifert fibered rational homology sphere or a negative definite weighted graph with at most two bad vertices.</p>
 <div class="figure">
-<img src="corrterm/images/gui.png" />
+<img src="corrterm/images/gui.png" /><p class="caption"></p>
 </div>
 <p>From the inputted data, a negative definite quadratic form is computed, and then the Heegaard Floer correction terms are computed from the quadratic form.</p>
 <h3 id="knotilus-archive">Knotilus archive</h3>
 <p>The <a href="http://knotilus.math.uwo.ca/">Knotilus archive</a> section has two input methods, either by entering an archive number or opening a saved file download from the Knotilus database.</p>
 <ul>
 <li><p><strong>Entering an archive number</strong><br />Archive numbers must be of the form ax-b-c, for integers a, b, and c. For example, 6x-1-1 or 20x-5-10. This method requires an Internet connection, and may take up to 20 seconds to load the link for 11 or more crossings. Visiting the link's database page with your browser and letting it load first will significantly decrease the program's running time. If the checkbutton <code>Save file</code> is selected, the plaintext data from the Knotilus database is saved in the current directory as <code>ax-b-c.txt</code>. Press the <code>Go</code> button when finished entering the archive number. See <a href="http://knotilus.math.uwo.ca/doc/archive.html">here</a> for more details about the Knotilus archive number.</p></li>
-<li><p><strong>Loading a downloaded Knotilus file</strong><br />A valid Knotilus file is created by going to <a href="http://knotilus.math.uwo.ca/">Knotilus</a>, finding the desired link, then selecting <code>Download &gt; Plaintext</code> and saving the file. The program will run noticeably faster on a downloaded Knotilus file than if it must fetch the file from the database. The option <code>original link</code> will only work if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>. It will be ignored otherwise.</p></li>
+<li><p><strong>Loading a downloaded Knotilus file</strong><br />A valid Knotilus file is created by going to [Knotilus] (http://knotilus.math.uwo.ca/), finding the desired link, then selecting <code>Download &gt; Plaintext</code> and saving the file. The program will run noticeably faster on a downloaded Knotilus file than if it must fetch the file from the database. The option <code>original link</code> will only work if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>. It will be ignored otherwise.</p></li>
 </ul>
 <h3 id="plinksnappy">PLink/SnapPy</h3>
 <p>The PLink/SnapPy section has two input methods, either by drawing a new link using the PLink Editor or opening a saved PLink file. Instruction for using PLink can be found in the documentation for SnapPy, <a href="http://www.math.uic.edu/t3m/SnapPy/plink.html">here</a>.</p>
@@ -32,11 +52,64 @@ $ pandoc -f markdown -t html README.md -o README.html
 <li><p><strong>Loading a saved PLink file</strong><br />A valid PLink file is created by drawing a link in the PLink editor, then using the menu option <code>File &gt; Save ...</code>. Clicking the <code>Open</code> button will load the open file dialog to select a valid PLink file.</p></li>
 </ul>
 <h3 id="seifert-data">Seifert data</h3>
-<p>Data for a Seifert fibered rational homology sphere is represented as a list <code>[e,(p1,q1),...,(pr,qr)]</code>, where e and all the pi, qi are integers, and all pi &gt; 1 with gcd(pi, qi) = 1.</p>
+<p>Data for a Seifert fibered rational homology sphere is represented as a list <code>[e,(p1,q1),...,(pr,qr)]</code>, where e and all the pi, qi are integers, and all pi &gt; 1 with gcd(pi, qi) = 1. If the resulting quadratic form is not negative definite, an error message will pop up.</p>
 <h3 id="weighted-graph-editor">Weighted graph editor</h3>
-<h3 id="options">Options</h3>
-<p>Under the <code>Options</code> menu, there are two global options, <code>Show quadratic form</code> and <code>Condense correction terms</code>. Additionally, there is the submenu <code>Double branched cover</code>, which has the options <code>Show original link</code>, <code>Show shaded link</code>, and <code>Show graph commands</code>. These last three options only affect the input methods on the <code>Double branched cover</code> tab (Knotilus and PLink/SnapPy).</p>
+<p>This input method is for plumbed 3-manifolds constructed from a negative- definite weighted graph with at most 2 bad vertices.</p>
+<p>Opening the editor will produce a &quot;Graph controls&quot; dialog.</p>
+<div class="figure">
+<img src="images/graph_controls.png" /><p class="caption"></p>
+</div>
+<p>Note: Increasing the size of the pyplot window will space out nodes more, which is useful in the case that they overlap.</p>
 <ul>
-<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code> and <code>graph commands</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line.</p></li>
-<li><p><strong>Double branched cover submenu</strong><br />If the <code>original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. If opening a saved Knotilus file, this will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
+<li><strong>Creating a node</strong><br />A parent of -1 indicates that the node is a root node, i.e. has no parent. To create a node, select its desired parent node, enter the node's weight (integer), then click create. The graph will be draw using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. Nodes are labeled <code>Nk,w</code>, where k is the node's number and w is its weight. For example, if the first node had weight -3, it would be labeled <code>N0,-3</code>.</li>
+<li><strong>Editing a node</strong><br />To edit a node, select the node's number. The node's parent and weight will be edited at the same time. Enter the desired new data, then click <code>Done</code>. To leave the parent unchanged, select <code>same</code> from the dropdown menu. To leave the weight unchanged, leave the entry field empty.</li>
+<li><strong>Deleting a node</strong> Only the last node (highest index) can be deleted.</li>
+<li><strong>Drawing/Saving/loading/exiting</strong>
+<ul>
+<li>The <code>Draw graph</code> button will open pyplot and draw the current graph. The</li>
+<li>program will automatically do this each time a node is created, edited, or deleted; this button is useful in case you close the pyplot window and don't want to create, edit, or delete a node or load a new graph.</li>
+<li>Click the <code>Save</code> button to save the graph data in a plaintext file. The file will contain the adjacency list of the graph, followed by a list of the node attributes.</li>
+<li>Click the <code>Load</code> button to load graph data from a plaintext file. The file must be in the same format used by <code>Save</code>. Loading a file will remove the current graph shown in pyplot. After loading a file, nodes may be created or edited. Note: The program uses the <code>eval()</code> method to parse the node attribute data. Thus, don't put Python code there that will harm your computer. (The program will raise an error if the data isn't a list, so doing this accidentally would be practically impossible.)</li>
+<li>Click the <code>Done/compute</code> button to close the editor and compute the correction terms.</li>
+<li>Click the <code>Cancel</code> button to close the editor without computing anything.</li>
+<li>If attempting to compute the correction terms, an error message will pop up if the quadratic form is not negative definite.</li>
+</ul></li>
 </ul>
+<h3 id="options">Options</h3>
+<p>Under the <code>Options</code> menu, there are three global options, <code>Print quadratic form</code>, <code>Print H_1(Y) type', and</code>Condense correction terms<code>. Additionally, there are the submenus</code>Double branched cover<code>and</code>Plumbed 3-manifolds`, which only affect those input methods, respectively. If an option starts with &quot;Print&quot;, it will print additional information in the correction terms window. If an option starts with &quot;Show&quot;, it will open a new window.</p>
+<ul>
+<li><p><strong>Global Options</strong><br />If the <code>quadratic form</code> option is checked, the quadratic form (square matrix) will be printed, in addition to the correction terms, in the output window. Checking the <code>condense correction terms</code> box will disable the <code>quadratic form</code>, <code>graph commands</code>, and <code>Seifert data</code> options, and the output window will just contain the Knotilus archive number or filename, followed by a space and the correction terms, all on a single line. For the <code>quadratic form</code> option with Seifert data, if the manifold orientation is reversed, the quadratic form will be for the altered (reversed) manifold, rather than the original. The option `Print H_1(Y) type' is checked by default; it prints the group structure of the first homology group H_1(Y).</p></li>
+<li><p><strong>Double branched cover submenu</strong><br />If the <code>Show original link</code> option is checked, a separate window will open to show the original link diagram. For Knotilus, this will open an Internet browser tab to the appropriate link. It may not work on Windows. If opening a saved Knotilus file, this option will only succeed if the filename is of the form <code>ax-b-c.txt</code> or <code>ax-b-c</code>, where 'ax-b-c' is the archive number. For PLink or SnapPy, the PLink editor will open with the original link drawing. The PLink file must be saved in order to do this.</p></li>
+<li><p><strong>Plumbed 3-manifold submenu</strong><br />If the <code>Show weighted graph</code> option is checked, the graph will be drawn in a separate window using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. The option <code>Print modified Seifert data</code> only affects Seifert data input.</p></li>
+</ul>
+<h2 id="command-line-operations">Command line operations</h2>
+<h3 id="graph_quad">graph_quad</h3>
+<p>This module handles double-branched covers and outputs the associated quadratic form.</p>
+<p>Usage:</p>
+<p><code>$ python graph_quad.py [-s] archive_num</code></p>
+<p><code>$ python graph_quad.py -f archive_num.txt</code></p>
+<p><code>$ python graph_quad.py -p [filename]</code></p>
+<p>The first two usages are for Knotilus. Use -s to save the plaintext file in the current directory. Use -f to indicate loading the file 'archive_num.txt'. The printed time to 'anneal' has to do with how long the Knotilus server takes to render the link and create the plaintext file. The last usage is for PLink. Optional argument 'filename' indicates loading 'filename'. No optional argument starts the PLink editor.</p>
+<h3 id="ndqf">ndqf</h3>
+<p>The ndqf (negative definite quadratic form) module takes the negative definite quadratic form (as a matrix) and computes the correction terms. It does NOT check that the matrix you enter is negative definite. (The program itself currently checks this in the modules that create the matrix instead.)</p>
+<p>Usage:</p>
+<pre><code>&gt;&gt;&gt; x = NDQF([[-5, -2], [-2, -4]])
+&gt;&gt;&gt; x.correction_terms()
+Computed from quadratic form in 0.04 seconds
+&#39;7/16, 1/4, -9/16, 0, -1/16, -3/4, -1/16, 0, -9/16, 1/4, 7/16, 0, -17/16,
+-3/4, -17/16, 0&#39;
+&gt;&gt;&gt; x.group
+Structure decomposition: H_1(Y) ~ Z/16Z.
+Generating vectors in order of invariant factor:
+[[0 1]] has order 16.
+Relation vectors (congruent to 0):
+[[ 1 -6]]</code></pre>
+<h3 id="smith">smith</h3>
+<p>The Smith module computes the Smith Normal Form of a numpy matrix, as well as the unimodular accompanying factors. The algorithm is an implementation of that of <a href="http://itee.uq.edu.au/~havas/1997hm.pdf">Havas and Majewski</a>.</p>
+<p>Usage:</p>
+<pre><code>&gt;&gt;&gt; x = np.matrix([[-5, -2], [-2, -4]])
+&gt;&gt;&gt; d, (u, v) = smith_normal_form(x)
+&gt;&gt;&gt; assert u * d * v = x
+&gt;&gt;&gt; print d
+[[1 0
+  0 16]]</code></pre>
