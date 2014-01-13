@@ -378,7 +378,7 @@ class PLinkBox(object):
             corr = quadform.correction_terms(self.use_multi.get())
         else: # unknot with no crossings
             quad = 'N/A (no crossings)'
-            corr = '{0}' # only 1 spin structure # TODO check this
+            corr = '{0}' # only 1 spin structure
             struct = '{1}'
     
         if self.condense.get():

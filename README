@@ -41,10 +41,8 @@ before trying to install `hfhom`. The program source code is available on
 [https://github.com/panaviatornado/hfhom](https://github.com/panaviatornado/hfhom)
 that is most up to date, then run either
 
-`[sudo] pip install git+git://github.com/th0114nd/hfhom.git`
-
-or
-
+`[sudo] pip install git+git://github.com/th0114nd/hfhom.git`  
+or  
 `[sudo] pip install git+git://github.com/panaviatornado/hfhom.git`
 
 To test the installation, run
@@ -232,16 +230,58 @@ separate window using
 
 Command line operations
 -----
+### corrterms.py ###
+This is the main command line interface, used for double branched cover and
+Seifert data.
+
+Usage:
+
+    $ python corrterms.py [-k] [-m] archive_num
+    $ python corrterms.py -kf [-m] archive_num.txt
+    $ python corrterms.py -p [-m] [filename]
+    $ python corrterms.py -s [-m] '[e, (p1, q1),...,(pr, qr)]'
+
+Command line options:
+
+`[-k]` to download and save Knotilus `archive_num` plaintext to
+ `archive_num.txt`  
+`-kf` to load `archive_num.txt` (Knotilus plaintext file)  
+`-p` to use Plink, `[filename]` to load `filename`  
+`-s` to use Seifert data (Note: data must be in quotes, i.e. as a string)  
+`[-m]` to use multiprocessing
+
+Example:
+
+    >>> python corrterms.py 9x-1-38
+    9x-1-38
+    Downloading from Knotilus
+    Getting page source...... [DONE]
+    Getting page source...... [DONE]
+    took 8.10623e-06 sec to anneal
+    [[-3 -1  1  0]
+     [-1 -4 -1 -1]
+     [ 1 -1 -4  1]
+     [ 0 -1  1 -3]]
+    H_1(Y) ~ Z/5ZxZ/15Z
+    Not using multiprocessing
+    Computed from quadratic form in 0.490264 seconds
+    7/10, 1/30, 13/30, -1/10, 13/30, 1/30, 7/10, 13/30, -23/30, -9/10, 1/30,
+    1/30, -9/10, -23/30, 13/30, 3/10, -23/30, -23/30, 3/10, 13/30, -11/30,
+    -1/10, -23/30, -11/30, -9/10, -11/30, -23/30, -1/10, -11/30, 13/30, -9/10,
+    -11/30, -23/30, -1/10, -11/30, 13/30, 3/10, -23/30, -23/30, 3/10, 13/30,
+    -11/30, -1/10, -23/30, -11/30, -9/10, -23/30, 13/30, 7/10, 1/30, 13/30,
+    -1/10, 13/30, 1/30, 7/10, 13/30, -23/30, -9/10, 1/30, 1/30, 3/10, 1/30, 5/6,
+    7/10, -11/30, -11/30, 7/10, 5/6, 1/30, 3/10, -11/30, 1/30, -1/2, 1/30, -11/30
+
+
 ### graph_quad ###
 This module handles double-branched covers and outputs the associated quadratic
 form.
 
 Usage:
 
-`$ python graph_quad.py [-s] archive_num`
-
-`$ python graph_quad.py -f archive_num.txt`
-
+`$ python graph_quad.py [-s] archive_num`  
+`$ python graph_quad.py -f archive_num.txt`  
 `$ python graph_quad.py -p [filename]`
 
 The first two usages are for Knotilus. Use -s to save the plaintext file in the
