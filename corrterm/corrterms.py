@@ -79,14 +79,19 @@ def main(loading_type, loading_data=None, use_multi=False):
         usage()
     # compute correction terms
     if loading_type != 's':
-        nodes = [NodeClass(i) for i in range(len(regions))]
-        tree = edges_regions(nodes,regions)
-        max_subtree = maximal_subtree(tree, nodes)
-        minus = minus_maximal_subtree(tree, max_subtree)
-        quad = quad_form(tree, minus, nodes)
-        print quad
-        quadform = NDQF(quad)
-        corr = quadform.correction_terms(use_multi)
+        if regions: # non-empty (i.e. not unknot with no crossings)         
+            nodes = [NodeClass(i) for i in range(len(regions))]
+            tree = edges_regions(nodes,regions)
+            max_subtree = maximal_subtree(tree, nodes)
+            minus = minus_maximal_subtree(tree, max_subtree)
+            quad = quad_form(tree, minus, nodes)
+            print quad
+            quadform = NDQF(quad)
+            corr = quadform.correction_terms(use_multi)
+        else: # unknot with no crossings
+            print 'quadratic form N/A (unknot with no crossings)'
+            print 'H_1(Y) ~ 1'
+            print '0' # corrterms - only 1 spin structure
     else: # Seifert
         corr = seifert_corr(loading_data, use_multi)
         print corr
@@ -120,9 +125,9 @@ if __name__ == '__main__':
                     mainvars[1] = arg
                 else: # loading data already specified
                     usage()
-        print mainvars
         main(mainvars[0], mainvars[1], mainvars[2])
     except Exception:
         print '\nERROR: ABORTING PROGRAM'
+        print traceback.format_exc()
         print '%s\n' %traceback.format_exc().splitlines()[-1]
         usage()
