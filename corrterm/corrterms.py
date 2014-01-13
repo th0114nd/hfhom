@@ -7,7 +7,6 @@ import traceback
 
 '''
 Command line usage for double branched cover and Seifert data
-usage: python corrterms.py archive_num
 OR     python corrterms.py [-k] [-m] archive_num
 OR     python corrterms.py -kf [-m] archive_num.txt
 OR     python corrterms.py -p [-m] [filename]
@@ -94,7 +93,6 @@ def main(loading_type, loading_data=None, use_multi=False):
     return
         
 def usage():
-    print 'usage: python corrterms.py [-m] archive_num'
     print 'OR     python corrterms.py [-k] [-m] archive_num'
     print 'OR     python corrterms.py -kf [-m] archive_num.txt'
     print 'OR     python corrterms.py -p [-m] [filename]'
