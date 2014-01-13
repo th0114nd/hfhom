@@ -1,6 +1,6 @@
 # Caltech SURF 2013
 # FILE: gui.py
-# 01.05.13
+# 01.12.13
 
 '''
 Main user interface for entering link data.
@@ -377,9 +377,10 @@ class PLinkBox(object):
             print struct            
             corr = quadform.correction_terms(self.use_multi.get())
         else: # unknot with no crossings
-            quad = 'N/A (no crossings)'
-            corr = '{0}' # only 1 spin structure # TODO check this
-            struct = '{1}'
+            quad = 'N/A (unknot with no crossings)'
+            corr = '0' # only 1 spin structure
+            struct = '1'
+            self.show_graph.set(0) # no graph to show
     
         if self.condense.get():
             OutputWindow(self.master, corr, struct, quad, inputinfo, 

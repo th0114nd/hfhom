@@ -22,9 +22,7 @@ $ pandoc -f markdown -t html README.md -o README.html
 <p>Installation the easy way requires <code>pip</code> first, with instructions <a href="http://www.pip-installer.org/en/latest/installing.html">here</a>. If you do not have an installation of <code>plink</code> installed that python can find, run</p>
 <p><code>pip install -f http://math.uic.edu/t3m/plink plink</code></p>
 <p>before trying to install <code>hfhom</code>. The program source code is available on <a href="https://github.com/">GitHub</a>. To install this program, find the repository <a href="https://github.com/th0114nd/hfhom">https://github.com/th0114nd/hfhom</a> or <a href="https://github.com/panaviatornado/hfhom">https://github.com/panaviatornado/hfhom</a> that is most up to date, then run either</p>
-<p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code></p>
-<p>or</p>
-<p><code>[sudo] pip install git+git://github.com/panaviatornado/hfhom.git</code></p>
+<p><code>[sudo] pip install git+git://github.com/th0114nd/hfhom.git</code><br />or<br /><code>[sudo] pip install git+git://github.com/panaviatornado/hfhom.git</code></p>
 <p>To test the installation, run</p>
 <p><code>hfhom</code></p>
 <p>For a successful installation, the program should start running.</p>
@@ -83,12 +81,40 @@ $ pandoc -f markdown -t html README.md -o README.html
 <li><p><strong>Plumbed 3-manifold submenu</strong><br />If the <code>Show weighted graph</code> option is checked, the graph will be drawn in a separate window using <a href="http://matplotlib.org/api/pyplot_api.html">matplotlib.pyplot</a>. The option <code>Print modified Seifert data</code> only affects Seifert data input.</p></li>
 </ul>
 <h2 id="command-line-operations">Command line operations</h2>
+<h3 id="corrterms.py">corrterms.py</h3>
+<p>This is the main command line interface, used for double branched cover and Seifert data.</p>
+<p>Usage:</p>
+<pre><code>$ python corrterms.py [-k] [-m] archive_num
+$ python corrterms.py -kf [-m] archive_num.txt
+$ python corrterms.py -p [-m] [filename]
+$ python corrterms.py -s [-m] &#39;[e, (p1, q1),...,(pr, qr)]&#39;</code></pre>
+<p>Command line options:</p>
+<p><code>[-k]</code> to download and save Knotilus <code>archive_num</code> plaintext to <code>archive_num.txt</code><br /><code>-kf</code> to load <code>archive_num.txt</code> (Knotilus plaintext file)<br /><code>-p</code> to use Plink, <code>[filename]</code> to load <code>filename</code><br /><code>-s</code> to use Seifert data (Note: data must be in quotes, i.e. as a string)<br /><code>[-m]</code> to use multiprocessing</p>
+<p>Example:</p>
+<pre><code>&gt;&gt;&gt; python corrterms.py 9x-1-38
+9x-1-38
+Downloading from Knotilus
+Getting page source...... [DONE]
+Getting page source...... [DONE]
+took 8.10623e-06 sec to anneal
+[[-3 -1  1  0]
+ [-1 -4 -1 -1]
+ [ 1 -1 -4  1]
+ [ 0 -1  1 -3]]
+H_1(Y) ~ Z/5ZxZ/15Z
+Not using multiprocessing
+Computed from quadratic form in 0.490264 seconds
+7/10, 1/30, 13/30, -1/10, 13/30, 1/30, 7/10, 13/30, -23/30, -9/10, 1/30,
+1/30, -9/10, -23/30, 13/30, 3/10, -23/30, -23/30, 3/10, 13/30, -11/30,
+-1/10, -23/30, -11/30, -9/10, -11/30, -23/30, -1/10, -11/30, 13/30, -9/10,
+-11/30, -23/30, -1/10, -11/30, 13/30, 3/10, -23/30, -23/30, 3/10, 13/30,
+-11/30, -1/10, -23/30, -11/30, -9/10, -23/30, 13/30, 7/10, 1/30, 13/30,
+-1/10, 13/30, 1/30, 7/10, 13/30, -23/30, -9/10, 1/30, 1/30, 3/10, 1/30, 5/6,
+7/10, -11/30, -11/30, 7/10, 5/6, 1/30, 3/10, -11/30, 1/30, -1/2, 1/30, -11/30</code></pre>
 <h3 id="graph_quad">graph_quad</h3>
 <p>This module handles double-branched covers and outputs the associated quadratic form.</p>
 <p>Usage:</p>
-<p><code>$ python graph_quad.py [-s] archive_num</code></p>
-<p><code>$ python graph_quad.py -f archive_num.txt</code></p>
-<p><code>$ python graph_quad.py -p [filename]</code></p>
+<p><code>$ python graph_quad.py [-s] archive_num</code><br /><code>$ python graph_quad.py -f archive_num.txt</code><br /><code>$ python graph_quad.py -p [filename]</code></p>
 <p>The first two usages are for Knotilus. Use -s to save the plaintext file in the current directory. Use -f to indicate loading the file 'archive_num.txt'. The printed time to 'anneal' has to do with how long the Knotilus server takes to render the link and create the plaintext file. The last usage is for PLink. Optional argument 'filename' indicates loading 'filename'. No optional argument starts the PLink editor.</p>
 <h3 id="ndqf">ndqf</h3>
 <p>The ndqf (negative definite quadratic form) module takes the negative definite quadratic form (as a matrix) and computes the correction terms. It does NOT check that the matrix you enter is negative definite. (The program itself currently checks this in the modules that create the matrix instead.)</p>
